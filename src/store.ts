@@ -1,13 +1,28 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { createClient } from "@supabase/supabase-js";
+import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  supabase,
+  isSupabaseConfigured,
+  missingSupabaseKeys,
+} from "./lib/supabase";
+import { mapAuthError } from "./lib/authErrors";
+import {
+  type AttemptRecord,
+  getLocalDateString,
+  getGuestData,
+  saveGuestData,
+  clearGuestData,
+  hasPendingGuestData,
+  fetchCloudProgress,
+  upsertProblemProgress,
+  insertTestAttempt,
+  logCloudActivity,
+  saveCloudProfile,
+  mergeGuestDataToCloud,
+} from "./lib/progressService";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const supabaseEnabled = Boolean(supabaseUrl && supabaseAnonKey);
-const supabase = supabaseEnabled
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+export { isSupabaseConfigured, missingSupabaseKeys };
+export const supabaseEnabled = isSupabaseConfigured;
 
 export type UserInfo = {
   uid: string;
@@ -17,19 +32,22 @@ export type UserInfo = {
   target: string;
   guest?: boolean;
 };
-export type Attempt = {
-  id: string;
-  topic: string;
-  score: number;
-  total: number;
-  accuracy: number;
-  duration: number;
-  date: string;
-};
+
+export type Attempt = AttemptRecord;
+
 type ProgressKey = "solved" | "bookmarks" | "revisit";
+
+export type ToastInfo = {
+  id: string;
+  message: string;
+  type: "success" | "error" | "info";
+};
+
 type State = {
   user: UserInfo | null;
   authReady: boolean;
+  toast: ToastInfo | null;
+  hasGuestDataToMigrate: boolean;
   solved: string[];
   bookmarks: string[];
   revisit: string[];
@@ -37,140 +55,493 @@ type State = {
   activeDays: string[];
   attempts: Attempt[];
   dark: boolean;
+
+  // Actions
   setUser: (user: UserInfo | null) => void;
   setAuthReady: (ready: boolean) => void;
+  setToast: (toast: ToastInfo | null) => void;
+  showToast: (message: string, type?: "success" | "error" | "info") => void;
+  setHasGuestDataToMigrate: (value: boolean) => void;
   clearProgress: () => void;
   toggle: (key: ProgressKey, id: string) => void;
   note: (id: string, value: string) => void;
   theme: () => void;
   markSession: () => void;
   recordAttempt: (attempt: Omit<Attempt, "id" | "date">) => void;
-  hydrate: (uid: string) => void;
+  updateProfile: (updates: { name?: string; college?: string; target?: string }) => void;
+  hydrate: (uid: string) => Promise<void>;
+  mergeGuestProgress: () => Promise<void>;
+  dismissGuestMigration: () => void;
+  continueAsGuest: () => void;
 };
-function localDay() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
       user: null,
-      authReady: !supabaseEnabled,
+      authReady: false,
+      toast: null,
+      hasGuestDataToMigrate: false,
       solved: [],
       bookmarks: [],
       revisit: [],
       notes: {},
       activeDays: [],
       attempts: [],
-      dark: false,
+      dark:
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches,
+
       setUser: (user) => set({ user, authReady: true }),
       setAuthReady: (authReady) => set({ authReady }),
+      setToast: (toast) => set({ toast }),
+      showToast: (message, type = "info") => {
+        set({ toast: { id: crypto.randomUUID(), message, type } });
+      },
+      setHasGuestDataToMigrate: (hasGuestDataToMigrate) => set({ hasGuestDataToMigrate }),
+
       clearProgress: () =>
-        set({ solved: [], bookmarks: [], revisit: [], notes: {}, activeDays: [], attempts: [] }),
+        set({
+          solved: [],
+          bookmarks: [],
+          revisit: [],
+          notes: {},
+          activeDays: [],
+          attempts: [],
+          hasGuestDataToMigrate: false,
+        }),
+
       toggle: (key, id) => {
         const list = get()[key];
-        set({ [key]: list.includes(id) ? list.filter((x) => x !== id) : [...list, id] } as Pick<State, typeof key>);
+        const isPresent = list.includes(id);
+        const nextList = isPresent ? list.filter((x) => x !== id) : [...list, id];
+        const { user } = get();
+
+        // 1. Optimistic UI update
+        set({ [key]: nextList } as Pick<State, typeof key>);
+
+        // If newly solved, mark session activity
+        if (key === "solved" && !isPresent) {
+          get().markSession();
+        }
+
+        // 2. Persist to cloud or guest
+        if (user && !user.guest && supabase) {
+          upsertProblemProgress(user.uid, id, { [key]: !isPresent }).catch((err) => {
+            console.error(`Failed to sync ${key} status:`, err);
+            get().showToast("Could not sync progress with cloud. Please check your connection.", "error");
+          });
+        } else {
+          // Guest mode
+          const currentGuest = getGuestData();
+          currentGuest[key] = nextList;
+          saveGuestData(currentGuest);
+        }
       },
-      note: (id, value) => set({ notes: { ...get().notes, [id]: value } }),
+
+      note: (id, value) => {
+        const nextNotes = { ...get().notes, [id]: value };
+        const { user } = get();
+
+        // Optimistic UI update
+        set({ notes: nextNotes });
+
+        if (user && !user.guest && supabase) {
+          upsertProblemProgress(user.uid, id, { note: value }).catch((err) => {
+            console.error("Failed to sync note to cloud:", err);
+            get().showToast("Could not save note to cloud.", "error");
+          });
+        } else {
+          const currentGuest = getGuestData();
+          currentGuest.notes = nextNotes;
+          saveGuestData(currentGuest);
+        }
+      },
+
       theme: () => set({ dark: !get().dark }),
+
       markSession: () => {
-        const activeDays = get().activeDays, day = localDay();
-        if (!activeDays.includes(day)) set({ activeDays: [...activeDays, day] });
+        const today = getLocalDateString();
+        const activeDays = get().activeDays;
+        if (!activeDays.includes(today)) {
+          const nextActiveDays = [...activeDays, today];
+          set({ activeDays: nextActiveDays });
+
+          const { user } = get();
+          if (user && !user.guest && supabase) {
+            logCloudActivity(user.uid, today).catch((err) => {
+              console.error("Failed to log activity:", err);
+            });
+          } else {
+            const currentGuest = getGuestData();
+            currentGuest.activeDays = nextActiveDays;
+            saveGuestData(currentGuest);
+          }
+        }
       },
+
       recordAttempt: (attempt) => {
-        const entry: Attempt = { ...attempt, id: crypto.randomUUID(), date: localDay() };
-        set({ attempts: [entry, ...get().attempts].slice(0, 100) });
+        const entry: Attempt = {
+          ...attempt,
+          id: crypto.randomUUID(),
+          date: getLocalDateString(),
+        };
+        const nextAttempts = [entry, ...get().attempts].slice(0, 100);
+        set({ attempts: nextAttempts });
         get().markSession();
+
+        const { user } = get();
+        if (user && !user.guest && supabase) {
+          insertTestAttempt(user.uid, entry).catch((err) => {
+            console.error("Failed to record test attempt:", err);
+            get().showToast("Could not save test attempt to cloud.", "error");
+          });
+        } else {
+          const currentGuest = getGuestData();
+          currentGuest.attempts = nextAttempts;
+          saveGuestData(currentGuest);
+        }
       },
-      hydrate: (uid) => {
+
+      updateProfile: (updates) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        const updatedUser: UserInfo = {
+          ...currentUser,
+          name: updates.name ?? currentUser.name,
+          college: updates.college ?? currentUser.college,
+          target: updates.target ?? currentUser.target,
+        };
+        set({ user: updatedUser });
+
+        if (!updatedUser.guest && supabase) {
+          saveCloudProfile(updatedUser.uid, updates).catch((err) => {
+            console.error("Failed to update profile:", err);
+            get().showToast("Could not update profile in cloud.", "error");
+          });
+        } else {
+          const currentGuest = getGuestData();
+          currentGuest.profile = {
+            name: updatedUser.name,
+            college: updatedUser.college,
+            target: updatedUser.target,
+          };
+          saveGuestData(currentGuest);
+        }
+      },
+
+      hydrate: async (uid: string) => {
         if (!supabase) return;
-        void (async () => {
-          try {
-            const { data, error } = await supabase.from("user_progress").select("progress").eq("user_id", uid).maybeSingle();
-            if (error) throw error;
-            const d = data?.progress;
-            if (d) {
-              const profile = d.profile ?? {};
+        try {
+          const data = await fetchCloudProgress(uid);
+          if (data) {
+            const currentUser = get().user;
+            if (currentUser && data.profile) {
               set({
-                user: get().user ? { ...get().user!, name: profile.name ?? get().user!.name, college: profile.college ?? "", target: profile.target ?? "Software Engineer" } : null,
-                solved: d.solved ?? [], bookmarks: d.bookmarks ?? [], revisit: d.revisit ?? [], notes: d.notes ?? {}, activeDays: d.activeDays ?? [], attempts: d.attempts ?? [],
+                user: {
+                  ...currentUser,
+                  name: data.profile.display_name || currentUser.name,
+                  college: data.profile.college || currentUser.college,
+                  target: data.profile.target_role || currentUser.target,
+                },
               });
             }
-          } catch (error) { console.error(error); }
-        })();
+            set({
+              solved: data.solved,
+              bookmarks: data.bookmarks,
+              revisit: data.revisit,
+              notes: data.notes,
+              attempts: data.attempts,
+              activeDays: data.activeDays,
+            });
+          }
+
+          // Check if user has guest data that could be merged
+          if (hasPendingGuestData()) {
+            set({ hasGuestDataToMigrate: true });
+          }
+        } catch (error) {
+          console.error("Error hydrating user progress:", error);
+          get().showToast("Failed to load your latest cloud progress.", "error");
+        }
+      },
+
+      mergeGuestProgress: async () => {
+        const { user } = get();
+        if (!user || user.guest || !supabase) return;
+
+        try {
+          const { mergedCount } = await mergeGuestDataToCloud(user.uid);
+          await get().hydrate(user.uid);
+          set({ hasGuestDataToMigrate: false });
+          get().showToast(`Successfully merged ${mergedCount} items from your guest session!`, "success");
+        } catch (err) {
+          console.error("Failed to merge guest data:", err);
+          get().showToast("Failed to merge guest progress.", "error");
+        }
+      },
+
+      dismissGuestMigration: () => {
+        clearGuestData();
+        set({ hasGuestDataToMigrate: false });
+      },
+
+      continueAsGuest: () => {
+        const guestData = getGuestData();
+        const guestUser: UserInfo = {
+          uid: "guest",
+          name: guestData.profile?.name || "Guest learner",
+          email: "",
+          college: guestData.profile?.college || "",
+          target: guestData.profile?.target || "Software Engineer",
+          guest: true,
+        };
+        set({
+          user: guestUser,
+          authReady: true,
+          solved: guestData.solved,
+          bookmarks: guestData.bookmarks,
+          revisit: guestData.revisit,
+          notes: guestData.notes,
+          attempts: guestData.attempts,
+          activeDays: guestData.activeDays,
+          hasGuestDataToMigrate: false,
+        });
       },
     }),
     {
-      name: "codecrest-guest",
+      name: "codecrest-preferences",
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => s.user?.guest
-        ? { user: s.user, solved: s.solved, bookmarks: s.bookmarks, revisit: s.revisit, notes: s.notes, activeDays: s.activeDays, attempts: s.attempts, dark: s.dark }
-        : { user: s.user, solved: [], bookmarks: [], revisit: [], notes: {}, activeDays: [], attempts: [], dark: s.dark },
+      partialize: (s) => ({
+        dark: s.dark,
+        // Only persist user if explicitly guest; authenticated users rely on Supabase session token
+        user: s.user?.guest ? s.user : null,
+      }),
     },
   ),
 );
 
-export async function saveProgress() {
-  const { user, solved, bookmarks, revisit, notes, activeDays, attempts } = useStore.getState();
-  if (!user || user.guest || !supabase) return;
-  const { error } = await supabase.from("user_progress").upsert({
-    user_id: user.uid,
-    progress: { solved, bookmarks, revisit, notes, activeDays, attempts, profile: { name: user.name, email: user.email, college: user.college, target: user.target } },
-    updated_at: new Date().toISOString(),
-  }, { onConflict: "user_id" });
-  if (error) throw error;
-}
+// ---------------------------------------------------------------------------
+// AUTHENTICATION FUNCTIONS
+// ---------------------------------------------------------------------------
+function setSupabaseSessionUser(user: {
+  id: string;
+  email?: string;
+  user_metadata?: { full_name?: string; name?: string };
+}) {
+  const name =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split("@")[0] ||
+    "Learner";
 
-function setSupabaseUser(user: { id: string; user_metadata: { full_name?: string; name?: string }; email?: string }) {
   useStore.getState().setUser({
     uid: user.id,
-    name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Learner",
-    email: user.email || "", college: "", target: "Software Engineer",
+    name,
+    email: user.email || "",
+    college: "",
+    target: "Software Engineer",
+    guest: false,
   });
-  useStore.getState().hydrate(user.id);
+
+  void useStore.getState().hydrate(user.id);
 }
 
 export async function login(email: string, password: string) {
-  if (!supabase) throw Error("Supabase is not configured. Choose guest mode to explore CodeCrest.");
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (!supabase) {
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim(),
+    password,
+  });
+
+  if (error) {
+    throw new Error(mapAuthError(error));
+  }
+
+  if (data.user) {
+    setSupabaseSessionUser(data.user);
+  }
 }
+
 export async function signup(name: string, email: string, password: string) {
-  if (!supabase) throw Error("Supabase is not configured. Choose guest mode to explore CodeCrest.");
-  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name }, emailRedirectTo: window.location.origin } });
-  if (error) throw error;
-  if (data.user && data.session) setSupabaseUser(data.user);
-  return !data.session;
+  if (!supabase) {
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+  }
+
+  const trimmedEmail = email.trim();
+  const trimmedName = name.trim();
+
+  const { data, error } = await supabase.auth.signUp({
+    email: trimmedEmail,
+    password,
+    options: {
+      data: {
+        full_name: trimmedName,
+        name: trimmedName,
+      },
+      emailRedirectTo: `${window.location.origin}/dashboard`,
+    },
+  });
+
+  if (error) {
+    throw new Error(mapAuthError(error));
+  }
+
+  // If email confirmation is disabled, session is returned immediately
+  if (data.session && data.user) {
+    setSupabaseSessionUser(data.user);
+    return { needsConfirmation: false };
+  }
+
+  // If email confirmation is enabled, session is null
+  return { needsConfirmation: true, email: trimmedEmail };
 }
+
+export async function resendConfirmationEmail(email: string) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: email.trim(),
+    options: {
+      emailRedirectTo: `${window.location.origin}/dashboard`,
+    },
+  });
+
+  if (error) {
+    throw new Error(mapAuthError(error));
+  }
+}
+
 export async function googleLogin() {
-  if (!supabase) throw Error("Supabase is not configured. Choose guest mode to explore CodeCrest.");
-  const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
-  if (error) throw error;
+  if (!supabase) {
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+  }
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/dashboard`,
+    },
+  });
+
+  if (error) {
+    throw new Error(mapAuthError(error));
+  }
 }
+
 export async function resetPassword(email: string) {
-  if (!supabase) throw Error("Supabase is not configured. Choose guest mode to explore CodeCrest.");
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/login` });
-  if (error) throw error;
+  if (!supabase) {
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+  }
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) {
+    throw new Error(mapAuthError(error));
+  }
 }
+
+export async function updatePassword(newPassword: string) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    throw new Error(mapAuthError(error));
+  }
+}
+
 export async function logout() {
   if (supabase) {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
   }
   useStore.getState().clearProgress();
   useStore.getState().setUser(null);
 }
+
+export async function saveProgress() {
+  // Maintained for backward compatibility; state updates in store now sync immediately via progressService
+}
+
+// ---------------------------------------------------------------------------
+// INITIALIZE AUTH & SESSION SUBSCRIPTION
+// ---------------------------------------------------------------------------
 export function subscribeAuth() {
-  if (!supabase) return;
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-    if (session?.user) {
-      const current = useStore.getState().user;
-      if (current?.guest || (current && current.uid !== session.user.id)) useStore.getState().clearProgress();
-      setSupabaseUser(session.user);
+  if (!supabase) {
+    // If Supabase is not configured, mark auth as ready immediately
+    // If user was guest, load their guest data
+    const currentUser = useStore.getState().user;
+    if (currentUser?.guest) {
+      useStore.getState().continueAsGuest();
     } else {
-      if (!useStore.getState().user?.guest) useStore.getState().setUser(null);
+      useStore.getState().setAuthReady(true);
+    }
+    return () => {};
+  }
+
+  let isSubscribed = true;
+
+  // 1. Initial session check on startup
+  supabase.auth
+    .getSession()
+    .then(({ data: { session }, error }) => {
+      if (!isSubscribed) return;
+      if (error) {
+        console.error("Error checking session:", error);
+      }
+
+      if (session?.user) {
+        setSupabaseSessionUser(session.user);
+      } else {
+        // No session: if user was previously an explicit guest, restore guest progress
+        const currentUser = useStore.getState().user;
+        if (currentUser?.guest) {
+          useStore.getState().continueAsGuest();
+        } else {
+          useStore.getState().setUser(null);
+        }
+      }
+      useStore.getState().setAuthReady(true);
+    })
+    .catch((err) => {
+      if (!isSubscribed) return;
+      console.error("Error retrieving initial session:", err);
+      useStore.getState().setAuthReady(true);
+    });
+
+  // 2. Auth state change listener
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    if (!isSubscribed) return;
+
+    if (session?.user) {
+      const currentUser = useStore.getState().user;
+      if (currentUser?.guest || (currentUser && currentUser.uid !== session.user.id)) {
+        useStore.getState().clearProgress();
+      }
+      setSupabaseSessionUser(session.user);
+    } else if (event === "SIGNED_OUT") {
+      useStore.getState().clearProgress();
+      useStore.getState().setUser(null);
       useStore.getState().setAuthReady(true);
     }
   });
-  return () => subscription.unsubscribe();
+
+  return () => {
+    isSubscribed = false;
+    subscription.unsubscribe();
+  };
 }

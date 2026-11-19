@@ -1458,12 +1458,6 @@ const companies = [
 ];
 const allSeed = [...seed, ...more];
 export const problems: Problem[] = allSeed
-  .filter(
-    (row) =>
-      !["meeting-rooms", "meeting-rooms-ii", "employee-free-time"].includes(
-        row[4],
-      ),
-  )
   .map(
     ([topicId, title, difficulty, pattern, leetcodeSlug, importance], i) => ({
       id: `${topicId}-${leetcodeSlug}`,

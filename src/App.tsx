@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Link,
   NavLink,
@@ -9,8 +9,9 @@ import {
   useNavigate,
   useParams,
   useSearchParams,
+  useLocation,
 } from "react-router-dom";
-import { motion } from "framer-motion";
+import { AnimatePresence, animate, motion, MotionConfig, type MotionStyle, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import {
   Activity,
   ArrowDownWideNarrow,
@@ -56,45 +57,46 @@ import {
   signup,
   googleLogin,
   resetPassword,
+  updatePassword,
+  resendConfirmationEmail,
   logout,
   subscribeAuth,
   saveProgress,
   supabaseEnabled,
+  isSupabaseConfigured,
+  missingSupabaseKeys,
 } from "./store";
 import LearnContent from "./components/LearnContent";
-function Logo({ dark = false }: { dark?: boolean }) {
+function Logo() {
+  const gradientId = `cc-gradient-${useId().replace(/:/g, "")}`;
   return (
     <Link
-      className={"brand " + (dark ? "brand-light" : "")}
+      className="brand"
       to="/"
       aria-label="CodeCrest home"
     >
       <svg width="38" height="38" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
-          <linearGradient id="crest" x1="0" y1="1" x2="1" y2="0">
-            <stop stopColor="#4F46E5" />
-            <stop offset="1" stopColor="#10B981" />
+          <linearGradient id={gradientId} x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#B5442A" />
+            <stop offset="1" stopColor="#E8742A" />
           </linearGradient>
         </defs>
-        <rect width="64" height="64" rx="16" fill="url(#crest)" />
+        <rect width="64" height="64" rx="16" fill={`url(#${gradientId})`} />
         <path
-          d="M20 27L10 37L20 47M44 27L54 37L44 47"
-          stroke="white"
-          strokeWidth="5"
+          d="M33.96 23.64A13 13 0 1 0 33.96 40.36"
+          stroke="#F1E7D3"
+          strokeWidth="5.5"
           strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          opacity=".85"
-        />
-        <path
-          d="M25 46L32 29L39 46"
-          stroke="white"
-          strokeWidth="5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
           fill="none"
         />
-        <circle cx="32" cy="19" r="4.5" fill="#F59E0B" />
+        <path
+          d="M49.96 23.64A13 13 0 1 0 49.96 40.36"
+          stroke="#F6C453"
+          strokeWidth="5.5"
+          strokeLinecap="round"
+          fill="none"
+        />
       </svg>
       <span className="wordmark">
         <span>Code</span>
@@ -104,13 +106,18 @@ function Logo({ dark = false }: { dark?: boolean }) {
   );
 }
 function App() {
-  const { user, dark } = useStore();
+  const { user, dark, authReady } = useStore();
+  const location = useLocation();
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     return subscribeAuth();
   }, []);
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
   }, [dark]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   useEffect(() => {
     const t = setInterval(
       () => void saveProgress().catch(console.error),
@@ -119,14 +126,33 @@ function App() {
     return () => clearInterval(t);
   }, []);
   return (
-    <Routes>
+    <MotionConfig reducedMotion="user">
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        className="route-transition"
+        key={location.pathname}
+        initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: reduceMotion ? 0 : -12 }}
+        transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: [0.22, 1, 0.36, 1] }}
+      >
+    <Routes location={location}>
       <Route
         path="/"
-        element={user ? <Navigate to="/dashboard" replace /> : <Landing />}
+        element={
+          !authReady ? (
+            <SkeletonPage />
+          ) : user ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <Landing />
+          )
+        }
       />
       <Route path="/login" element={<AuthPage kind="login" />} />
       <Route path="/signup" element={<AuthPage kind="signup" />} />
       <Route path="/forgot-password" element={<AuthPage kind="forgot" />} />
+      <Route path="/reset-password" element={<AuthPage kind="reset" />} />
       <Route element={<Protected />}>
         <Route
           path="/dashboard"
@@ -203,6 +229,9 @@ function App() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
+      </motion.div>
+    </AnimatePresence>
+    </MotionConfig>
   );
 }
 function Protected() {
@@ -229,6 +258,7 @@ function SkeletonPage() {
   );
 }
 function Landing() {
+  const reduceMotion = useReducedMotion();
   const features = [
     {
       icon: Layers,
@@ -265,10 +295,23 @@ function Landing() {
             <div className="eyebrow">
               <span className="eyebrow-dot" /> YOUR NEXT CHAPTER STARTS HERE
             </div>
-            <h1>
-              Build skills.
-              <br />
-              <span className="gradient-text">Earn your edge.</span>
+            <h1 className="hero-headline" aria-label="Code. Climb. Crest.">
+              {[
+                { word: "Code.", delay: 0 },
+                { word: "Climb.", delay: 0.08 },
+                { word: "Crest.", delay: 0.16, accent: true },
+              ].map(({ word, delay, accent }) => (
+                <motion.span
+                  key={word}
+                  className={accent ? "hero-word gradient-text" : "hero-word"}
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? 0.12 : 0.42, delay: reduceMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+                  aria-hidden="true"
+                >
+                  {accent ? <em>{word}</em> : word}
+                </motion.span>
+              ))}
             </h1>
             <p className="hero-body">
               A clearer path to interview confidence. Master coding patterns,
@@ -396,7 +439,13 @@ function Landing() {
             </p>
           </div>
         </section>
-        <section className="section wrap">
+        <motion.section
+          className="section wrap"
+          initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.16 }}
+          transition={{ duration: reduceMotion ? 0.12 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="section-heading">
             <div className="eyebrow">A BETTER WAY TO PREPARE</div>
             <h2>
@@ -412,10 +461,10 @@ function Landing() {
               <motion.article
                 key={f.title}
                 className="feature-card"
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.09 }}
+                transition={{ delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="feature-icon">
                   <f.icon size={21} />
@@ -426,8 +475,14 @@ function Landing() {
               </motion.article>
             ))}
           </div>
-        </section>
-        <section className="cta-band">
+        </motion.section>
+        <motion.section
+          className="cta-band"
+          initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: reduceMotion ? 0.12 : 0.38, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="wrap cta-inner">
             <div>
               <span className="eyebrow">YOUR NEXT STEP IS A SMALL ONE</span>
@@ -442,7 +497,7 @@ function Landing() {
             </Link>
             <div className="cta-mark">CC</div>
           </div>
-        </section>
+        </motion.section>
       </main>
       <footer className="footer wrap">
         <Logo />
@@ -452,57 +507,79 @@ function Landing() {
     </div>
   );
 }
-function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
+function AuthPage({
+  kind,
+}: {
+  kind: "login" | "signup" | "forgot" | "reset";
+}) {
   const [name, setName] = useState(""),
     [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
+    [confirmPassword, setConfirmPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [err, setErr] = useState(""),
-    [done, setDone] = useState(false);
+    [done, setDone] = useState(false),
+    [resendBusy, setResendBusy] = useState(false),
+    [resendMsg, setResendMsg] = useState("");
   const nav = useNavigate();
+
   const guest = () => {
-    useStore.getState().setUser({
-      uid: "guest",
-      name: "Guest learner",
-      email: "",
-      college: "",
-      target: "Software Engineer",
-      guest: true,
-    });
+    useStore.getState().continueAsGuest();
     nav("/dashboard");
   };
+
+  async function handleResend() {
+    if (!email) return;
+    setResendBusy(true);
+    setResendMsg("");
+    setErr("");
+    try {
+      await resendConfirmationEmail(email);
+      setResendMsg("Confirmation email resent! Please check your inbox.");
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setResendBusy(false);
+    }
+  }
+
   async function run(fn: () => Promise<unknown>) {
     setErr("");
     setBusy(true);
     try {
       const result = await fn();
-      if (kind === "forgot" || (kind === "signup" && result === true))
+      if (
+        kind === "forgot" ||
+        kind === "reset" ||
+        (kind === "signup" &&
+          (result as { needsConfirmation?: boolean })?.needsConfirmation)
+      ) {
         setDone(true);
-      else nav("/dashboard");
+      } else {
+        nav("/dashboard");
+      }
     } catch (e) {
-      const m =
-        (e as Error).message || "Something went wrong. Please try again.";
-      setErr(
-        m
-          .replace(/^AuthApiError:\s*/i, "")
-          .trim(),
-      );
+      setErr((e as Error).message || "Something went wrong. Please try again.");
     } finally {
       setBusy(false);
     }
   }
+
   const title =
     kind === "login"
       ? "Welcome back"
       : kind === "signup"
         ? "Start your journey"
-        : "Reset your password";
+        : kind === "reset"
+          ? "Set new password"
+          : "Reset your password";
+
   return (
     <div className="auth-page">
       <aside className="auth-side">
         <div className="auth-side-shape shape-a" />
         <div className="auth-side-shape shape-b" />
-        <Logo dark />
+        <Logo />
         <div className="auth-side-content">
           <div className="eyebrow light-eyebrow">YOUR JOURNEY, YOUR PACE</div>
           <h1>
@@ -530,11 +607,25 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
           <Logo />
         </div>
         <div className="auth-card">
+          {!isSupabaseConfigured && import.meta.env.DEV && (
+            <div className="dev-banner" role="alert">
+              <strong>[Dev Notice]</strong> Missing Supabase configuration:{" "}
+              <code>{missingSupabaseKeys.join(", ")}</code>. Account authentication is disabled.
+            </div>
+          )}
+
+          {!isSupabaseConfigured && (
+            <div className="form-error" style={{ marginBottom: 16 }}>
+              <AlertCircle size={16} />
+              Login is temporarily unavailable. You can explore as a guest.
+            </div>
+          )}
+
           <div className="auth-heading">
             <div className="auth-kicker">
               {kind === "signup"
                 ? "FREE TO GET STARTED"
-                : kind === "forgot"
+                : kind === "forgot" || kind === "reset"
                   ? "ACCOUNT RECOVERY"
                   : "YOUR NEXT SESSION AWAITS"}
             </div>
@@ -547,19 +638,45 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                 ? "Pick up where you left off."
                 : kind === "signup"
                   ? "Create your account and take the first step."
-                  : "We’ll email you a link to reset it."}
+                  : kind === "reset"
+                    ? "Choose a strong new password for your account."
+                    : "We’ll email you a link to reset it."}
             </p>
           </div>
+
           {done ? (
             <div className="success-panel">
               <CheckCircle2 size={25} />
-              <b>{kind === "signup" ? "Confirm your email" : "Check your inbox"}</b>
+              <b>
+                {kind === "signup"
+                  ? "Check your email to confirm your account"
+                  : kind === "reset"
+                    ? "Password updated successfully!"
+                    : "Check your inbox"}
+              </b>
               <p>
                 {kind === "signup"
-                  ? `We sent a confirmation link to ${email}. Open it to finish creating your account.`
-                  : `If an account exists for ${email}, we’ve sent a reset link.`}
+                  ? "We sent a confirmation link to " + email + ". Open it to finish creating your account."
+                  : kind === "reset"
+                    ? "Your password has been updated. You can now log in with your new password."
+                    : "If an account exists for " + email + ", we have sent a reset link."}
               </p>
-              <Link className="btn btn-primary" to="/login">
+
+              {kind === "signup" && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    disabled={resendBusy}
+                    onClick={() => void handleResend()}
+                    className="btn btn-quiet auth-resend-btn"
+                  >
+                    {resendBusy ? "Resending..." : "Resend email"}
+                  </button>
+                  {resendMsg && <div className="auth-resend-notice">{resendMsg}</div>}
+                </div>
+              )}
+
+              <Link className="btn btn-primary" to="/login" style={{ marginTop: 14 }}>
                 Back to log in
               </Link>
             </div>
@@ -569,10 +686,23 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                 className="auth-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (kind === "login") void run(() => login(email, password));
-                  else if (kind === "signup")
+                  if (kind === "reset") {
+                    if (password.length < 6) {
+                      setErr("Password must be at least 6 characters.");
+                      return;
+                    }
+                    if (password !== confirmPassword) {
+                      setErr("Passwords do not match.");
+                      return;
+                    }
+                    void run(() => updatePassword(password));
+                  } else if (kind === "login") {
+                    void run(() => login(email, password));
+                  } else if (kind === "signup") {
                     void run(() => signup(name, email, password));
-                  else void run(() => resetPassword(email));
+                  } else {
+                    void run(() => resetPassword(email));
+                  }
                 }}
               >
                 {kind === "signup" && (
@@ -587,31 +717,35 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                     />
                   </label>
                 )}
-                <label>
-                  Email address
-                  <input
-                    required
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </label>
+                {kind !== "reset" && (
+                  <label>
+                    Email address
+                    <input
+                      required
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                )}
                 {kind !== "forgot" && (
                   <label>
-                    Password
+                    {kind === "reset" ? "New password" : "Password"}
                     <input
                       required
                       type="password"
                       minLength={6}
                       autoComplete={
-                        kind === "signup" ? "new-password" : "current-password"
+                        kind === "signup" || kind === "reset"
+                          ? "new-password"
+                          : "current-password"
                       }
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={
-                        kind === "signup"
+                        kind === "signup" || kind === "reset"
                           ? "At least 6 characters"
                           : "Enter your password"
                       }
@@ -623,6 +757,20 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                     )}
                   </label>
                 )}
+                {kind === "reset" && (
+                  <label>
+                    Confirm new password
+                    <input
+                      required
+                      type="password"
+                      minLength={6}
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter new password"
+                    />
+                  </label>
+                )}
                 {err && (
                   <div role="alert" className="form-error">
                     <AlertCircle size={16} />
@@ -630,7 +778,7 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                   </div>
                 )}
                 <button
-                  disabled={busy}
+                  disabled={busy || !isSupabaseConfigured}
                   className="btn btn-primary btn-full"
                   type="submit"
                 >
@@ -640,13 +788,15 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                     "Log in"
                   ) : kind === "signup" ? (
                     "Create account"
+                  ) : kind === "reset" ? (
+                    "Update password"
                   ) : (
                     "Send reset link"
                   )}
                   {!busy && <ArrowRight size={16} />}
                 </button>
               </form>
-              {kind !== "forgot" && (
+              {kind !== "forgot" && kind !== "reset" && (
                 <>
                   <div className="auth-divider">
                     <span />
@@ -655,21 +805,21 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
                   </div>
                   <button
                     className="google-btn"
-                    disabled={busy}
+                    disabled={busy || !isSupabaseConfigured}
                     onClick={() => void run(googleLogin)}
+                    type="button"
                   >
                     <GoogleIcon />
                     Continue with Google
                   </button>
-                  <button className="guest-btn" onClick={guest}>
+                  <button className="guest-btn" type="button" onClick={guest}>
                     Continue as a guest <ArrowRight size={15} />
                   </button>
                 </>
               )}
               {!supabaseEnabled && (
                 <p className="auth-hint">
-                  <ShieldCheck size={14} /> Supabase is not configured yet.
-                  Guest mode works now.
+                  <ShieldCheck size={14} /> Supabase is not configured. Guest mode is available.
                 </p>
               )}
               <p className="auth-switch">
@@ -700,25 +850,26 @@ function AuthPage({ kind }: { kind: "login" | "signup" | "forgot" }) {
     </div>
   );
 }
+
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
       <path
-        fill="#EA4335"
+        fill="currentColor"
         d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
         transform="translate(0 5)"
       />
       <path
-        fill="#4285F4"
+        fill="currentColor"
         d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.72 7.18l7.64 5.93c4.46-4.12 7.12-10.19 7.12-17.58z"
       />
       <path
-        fill="#FBBC05"
+        fill="currentColor"
         d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a23.93 23.93 0 0 0 0 21.56l7.98-6.19z"
         transform="translate(0 5)"
       />
       <path
-        fill="#34A853"
+        fill="currentColor"
         d="M24 48c6.48 0 11.93-2.14 15.9-5.83l-7.64-5.93c-2.12 1.42-4.84 2.26-8.26 2.26-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
         transform="translate(0 -1)"
       />
@@ -726,16 +877,37 @@ function GoogleIcon() {
   );
 }
 function Shell({ children }: { children: React.ReactNode }) {
-  const { user, dark, theme, activeDays } = useStore(),
+  const {
+    user,
+    dark,
+    theme,
+    activeDays,
+    toast,
+    setToast,
+    hasGuestDataToMigrate,
+    mergeGuestProgress,
+    dismissGuestMigration,
+  } = useStore(),
     [navOpen, setNavOpen] = useState(false),
     [globalOpen, setGlobalOpen] = useState(false),
     [streakOpen, setStreakOpen] = useState(false),
+    [scrolled, setScrolled] = useState(false),
     [notice, setNotice] = useState("");
   const today = new Date().toLocaleDateString("en-CA"),
     streak = calcStreak(activeDays, today);
   useEffect(() => {
+    if (toast) {
+      setNotice(toast.message);
+      const timer = setTimeout(() => {
+        setNotice("");
+        setToast(null);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast, setToast]);
+  useEffect(() => {
     if (notice) {
-      const t = setTimeout(() => setNotice(""), 2800);
+      const t = setTimeout(() => setNotice(""), 3500);
       return () => clearTimeout(t);
     }
   }, [notice]);
@@ -749,9 +921,15 @@ function Shell({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  useEffect(() => {
+    const updateScroll = () => setScrolled(window.scrollY > 8);
+    updateScroll();
+    window.addEventListener("scroll", updateScroll, { passive: true });
+    return () => window.removeEventListener("scroll", updateScroll);
+  }, []);
   return (
     <div className="app-shell">
-      <header className="topbar">
+      <header className={"topbar " + (scrolled ? "topbar-scrolled" : "")}>
         <button
           className="mobile-menu icon-button"
           onClick={() => setNavOpen((v) => !v)}
@@ -770,6 +948,12 @@ function Shell({ children }: { children: React.ReactNode }) {
           <kbd>Ctrl K</kbd>
         </button>
         <div className="topbar-right">
+          {user?.guest && (
+            <Link to="/signup" className="guest-pill-prompt">
+              <User size={13} />
+              <span>Guest mode · <u>Sign up to sync</u></span>
+            </Link>
+          )}
           <button
             onClick={() => setStreakOpen((open) => !open)}
             className={
@@ -780,27 +964,63 @@ function Shell({ children }: { children: React.ReactNode }) {
             aria-expanded={streakOpen}
           >
             <Flame size={18} fill="currentColor" />
-            <b>{streak}</b>
+            <b><CountUp value={streak} /></b>
           </button>
           <button
             onClick={theme}
             className="icon-button theme-button"
             aria-label={dark ? "Use light theme" : "Use dark theme"}
           >
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={dark ? "sun" : "moon"}
+                initial={{ opacity: 0, rotate: -35, scale: 0.75 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 35, scale: 0.75 }}
+                transition={{ duration: 0.18 }}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </motion.span>
+            </AnimatePresence>
           </button>
           <div className="user-menu">
-            <Link to="/profile" className="user-avatar" aria-label="Profile">
-              {(user?.name || "G")
-                .split(" ")
-                .map((x) => x[0])
-                .slice(0, 2)
-                .join("")
-                .toUpperCase()}
+            <Link to="/profile" className="user-profile-link" aria-label="Profile">
+              {!user?.guest && user?.name && (
+                <span className="user-nav-name">{user.name.split(" ")[0]}</span>
+              )}
+              <div className="user-avatar" title={user?.name || "Profile"}>
+                {(user?.name || "G")
+                  .split(" ")
+                  .map((x) => x[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase()}
+              </div>
             </Link>
           </div>
         </div>
       </header>
+      {hasGuestDataToMigrate && !user?.guest && (
+        <div className="guest-migration-banner">
+          <div className="migration-banner-content">
+            <Flame size={16} fill="currentColor" />
+            <span>
+              Guest progress found on this device! Merge your solved problems, notes, and streak into this account?
+            </span>
+          </div>
+          <div className="migration-banner-actions">
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => void mergeGuestProgress()}
+            >
+              Merge progress
+            </button>
+            <button className="btn btn-sm btn-quiet" onClick={dismissGuestMigration}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       <div className="app-body">
         <aside className={"sidebar " + (navOpen ? "sidebar-open" : "")}>
           <div className="side-label">WORKSPACE</div>
@@ -810,8 +1030,12 @@ function Shell({ children }: { children: React.ReactNode }) {
               "side-link " + (isActive ? "active" : "")
             }
           >
-            <Grid2X2 size={17} />
-            Overview
+            {({ isActive }) => (
+              <>
+                <Grid2X2 size={17} /> Overview
+                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
+              </>
+            )}
           </NavLink>
           <NavLink
             to="/dsa"
@@ -819,8 +1043,12 @@ function Shell({ children }: { children: React.ReactNode }) {
               "side-link " + (isActive ? "active" : "")
             }
           >
-            <Code2 size={17} />
-            DSA roadmap <span className="side-badge">{problems.length}</span>
+            {({ isActive }) => (
+              <>
+                <Code2 size={17} /> DSA roadmap <span className="side-badge">{problems.length}</span>
+                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
+              </>
+            )}
           </NavLink>
           <NavLink
             to="/aptitude"
@@ -828,8 +1056,12 @@ function Shell({ children }: { children: React.ReactNode }) {
               "side-link " + (isActive ? "active" : "")
             }
           >
-            <BookOpen size={17} />
-            Aptitude
+            {({ isActive }) => (
+              <>
+                <BookOpen size={17} /> Aptitude
+                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
+              </>
+            )}
           </NavLink>
           <NavLink
             to="/streak"
@@ -837,8 +1069,12 @@ function Shell({ children }: { children: React.ReactNode }) {
               "side-link " + (isActive ? "active" : "")
             }
           >
-            <Flame size={17} />
-            Your streak
+            {({ isActive }) => (
+              <>
+                <Flame size={17} /> Your streak
+                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
+              </>
+            )}
           </NavLink>
           <div className="side-label side-label-spaced">YOUR SPACE</div>
           <NavLink
@@ -847,8 +1083,12 @@ function Shell({ children }: { children: React.ReactNode }) {
               "side-link " + (isActive ? "active" : "")
             }
           >
-            <User size={17} />
-            Profile & goals
+            {({ isActive }) => (
+              <>
+                <User size={17} /> Profile & goals
+                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
+              </>
+            )}
           </NavLink>
           <div className="side-spacer" />
           <div className="side-tip">
@@ -868,7 +1108,17 @@ function Shell({ children }: { children: React.ReactNode }) {
             <div>
               <b>{user?.name}</b>
               <small>
-                {user?.guest ? "Guest learner" : "Your learning space"}
+                {user?.guest ? (
+                  <Link
+                    to="/signup"
+                    className="text-link"
+                    style={{ fontSize: "11px", textDecoration: "underline" }}
+                  >
+                    Sign up to save progress
+                  </Link>
+                ) : (
+                  "Your learning space"
+                )}
               </small>
             </div>
             <button
@@ -887,7 +1137,20 @@ function Shell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <AnimatePresence>
+        {navOpen && (
+          <motion.button
+            className="mobile-nav-backdrop"
+            aria-label="Close navigation"
+            onClick={() => setNavOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+        )}
+      </AnimatePresence>
       {globalOpen && <GlobalSearch onClose={() => setGlobalOpen(false)} />}
+      <AnimatePresence>
       {streakOpen && (
         <StreakPopover
           days={activeDays}
@@ -896,13 +1159,23 @@ function Shell({ children }: { children: React.ReactNode }) {
           onClose={() => setStreakOpen(false)}
         />
       )}
+      </AnimatePresence>
       <MilestoneCelebration />
-      {notice && (
-        <div className="toast" role="status">
-          <CheckCircle2 size={17} />
-          {notice}
-        </div>
-      )}
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            className="toast"
+            role="status"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <CheckCircle2 size={17} />
+            {notice}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -917,6 +1190,7 @@ function StreakPopover({
   current: number;
   onClose: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const now = new Date(),
     year = now.getFullYear(),
     month = now.getMonth(),
@@ -938,12 +1212,19 @@ function StreakPopover({
     last = day;
   }
   return (
-    <div
+    <motion.div
       className="streak-popover-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <section
+      <motion.section
         className="streak-popover card"
+        initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.94, y: reduceMotion ? 0 : -8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97, y: reduceMotion ? 0 : -4 }}
+        transition={{ type: "spring", stiffness: 380, damping: 30 }}
         role="dialog"
         aria-label="Streak calendar"
       >
@@ -989,12 +1270,15 @@ function StreakPopover({
               const day = i + 1,
                 key = new Date(year, month, day).toLocaleDateString("en-CA");
               return (
-                <i
+                <motion.i
                   key={day}
                   className={`${active.has(key) ? "mini-day-active" : ""} ${key === today ? "mini-day-today" : ""}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.16, delay: reduceMotion ? 0 : Math.min(day * 0.008, 0.24) }}
                 >
                   {day}
-                </i>
+                </motion.i>
               );
             })}
           </div>
@@ -1023,8 +1307,8 @@ function StreakPopover({
         >
           See your full streak <ArrowRight size={14} />
         </Link>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }
 function GlobalSearch({ onClose }: { onClose: () => void }) {
@@ -1127,6 +1411,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
   );
 }
 function MilestoneCelebration() {
+  const reduceMotion = useReducedMotion();
   const { activeDays } = useStore(),
     today = new Date().toLocaleDateString("en-CA"),
     streak = calcStreak(activeDays, today),
@@ -1143,11 +1428,11 @@ function MilestoneCelebration() {
   if (!visible) return null;
   return (
     <div className="milestone-overlay" role="status" aria-live="polite">
-      <div className="confetti">
+      {!reduceMotion && <div className="confetti">
         {Array.from({ length: 28 }, (_, i) => (
           <i key={i} style={{ "--i": i } as React.CSSProperties} />
         ))}
-      </div>
+      </div>}
       <div className="milestone-card">
         <span>✦</span>
         <b>{streak} days of showing up</b>
@@ -1263,13 +1548,13 @@ function Dashboard() {
         </div>
         <Link to="/streak" className="stat-card stat-streak">
           <div className="stat-top">
-            <span className="stat-icon amber-bg">
+            <span className="stat-icon ember-bg">
               <Flame size={17} fill="currentColor" />
             </span>
             <span className="stat-subtle">BUILD YOUR MOMENTUM</span>
           </div>
           <div className="stat-number">
-            {streak}
+            <CountUp value={streak} />
             <span> days</span>
           </div>
           <div className="stat-label">Current streak</div>
@@ -1281,7 +1566,7 @@ function Dashboard() {
         </Link>
         <Link to="/aptitude" className="stat-card stat-aptitude">
           <div className="stat-top">
-            <span className="stat-icon green-bg">
+            <span className="stat-icon success-bg">
               <BookOpen size={17} />
             </span>
             <span className="stat-subtle">READY WHEN YOU ARE</span>
@@ -1549,25 +1834,47 @@ function Dashboard() {
   );
 }
 function ProgressRing({ value, size = 35 }: { value: number; size?: number }) {
+  const reduceMotion = useReducedMotion();
+  const progressValue = useMotionValue(0);
+  const progress = useTransform(progressValue, (latest) => `${latest}%`);
+  useEffect(() => {
+    const controls = animate(progressValue, Math.min(value, 100), {
+      duration: reduceMotion ? 0 : 0.42,
+      ease: [0.22, 1, 0.36, 1],
+    });
+    return controls.stop;
+  }, [progressValue, reduceMotion, value]);
   return (
-    <div
+    <motion.div
       className="progress-ring"
-      style={
-        {
-          width: size,
-          height: size,
-          "--progress": `${Math.min(value, 100)}%`,
-        } as React.CSSProperties
-      }
+      style={{ width: size, height: size, "--progress": progress } as MotionStyle}
     >
-      <span>{value}%</span>
-    </div>
+      <span><CountUp value={value} />%</span>
+    </motion.div>
   );
+}
+function CountUp({ value }: { value: number }) {
+  const reduceMotion = useReducedMotion();
+  const motionValue = useMotionValue(value);
+  const rounded = useTransform(motionValue, (latest) => Math.round(latest));
+  useEffect(() => {
+    if (reduceMotion) {
+      motionValue.set(value);
+      return;
+    }
+    const controls = animate(motionValue, value, {
+      duration: 0.42,
+      ease: [0.22, 1, 0.36, 1],
+    });
+    return controls.stop;
+  }, [motionValue, reduceMotion, value]);
+  return <motion.span>{rounded}</motion.span>;
 }
 function DsaRoadmap() {
   const { solved } = useStore(),
     [query, setQuery] = useState(""),
     [group, setGroup] = useState("All topics");
+  const reduceMotion = useReducedMotion();
   const groups = [
     "All topics",
     "Foundations",
@@ -1700,9 +2007,9 @@ function DsaRoadmap() {
             return (
               <motion.div
                 key={t.id}
-                initial={{ opacity: 0, y: 9 }}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 9 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.025 }}
+                transition={{ delay: reduceMotion ? 0 : Math.min(i, 8) * 0.06, duration: reduceMotion ? 0.12 : 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
                 <Link to={`/dsa/${t.id}`} className="topic-card">
                   <div className="topic-card-top">
@@ -1769,6 +2076,7 @@ function TopicPage() {
     [noteOpen, setNoteOpen] = useState<string | null>(null);
   if (!topic) return <NotFound />;
   const all = problems.filter((p) => p.topicId === topic.id);
+  const availablePatterns = [...new Set(all.map((p) => p.pattern))];
   const companies = [...new Set(all.flatMap((p) => p.companies))].sort();
   const passing = all
     .filter(
@@ -1793,9 +2101,15 @@ function TopicPage() {
     .sort((a, b) =>
       sort ? b.importance - a.importance : a.title.localeCompare(b.title),
     );
-  const byPattern = topic.patterns
-    .map((p) => ({ ...p, items: passing.filter((x) => x.pattern === p.name) }))
-    .filter((p) => p.items.length);
+  const byPattern = availablePatterns
+    .map((name) => ({
+      name,
+      tip:
+        topic.patterns.find((item) => item.name === name)?.tip ??
+        `Practice problems that use ${name.toLowerCase()}.`,
+      items: passing.filter((problem) => problem.pattern === name),
+    }))
+    .filter((group) => group.items.length > 0);
   function solvedToggle(id: string) {
     toggle("solved", id);
     if (!solved.includes(id)) markSession();
@@ -1913,8 +2227,8 @@ function TopicPage() {
           onChange={(e) => setPattern(e.target.value)}
         >
           <option>All patterns</option>
-          {topic.patterns.map((p) => (
-            <option key={p.name}>{p.name}</option>
+          {availablePatterns.map((name) => (
+            <option key={name}>{name}</option>
           ))}
         </select>
         <button className="sort-button" onClick={() => setSort((x) => !x)}>
@@ -1959,7 +2273,7 @@ function TopicPage() {
               ).length,
               isOpen = open.length === 0 || open.includes(p.name);
             return (
-              <section className="pattern-card" key={p.name}>
+              <motion.section className="pattern-card" key={p.name} layout>
                 <button
                   className="pattern-heading"
                   onClick={() =>
@@ -1984,17 +2298,28 @@ function TopicPage() {
                       {done}/{count}
                     </span>
                   </span>
-                  {isOpen ? (
+                  <motion.span
+                    animate={{ rotate: isOpen ? 0 : -90 }}
+                    transition={{ duration: 0.2 }}
+                    aria-hidden="true"
+                  >
                     <ChevronDown size={17} />
-                  ) : (
-                    <ChevronRight size={17} />
-                  )}
+                  </motion.span>
                 </button>
-                {isOpen && (
-                  <div className="problem-list">
-                    {p.items.map((pr) => (
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                  <motion.div
+                    className="problem-list"
+                    key="problem-list"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {p.items.map((pr, rowIndex) => (
                       <ProblemRow
                         key={pr.id}
+                        index={rowIndex}
                         problem={pr}
                         solved={solved.includes(pr.id)}
                         bookmarked={bookmarks.includes(pr.id)}
@@ -2019,9 +2344,10 @@ function TopicPage() {
                         }}
                       />
                     ))}
-                  </div>
-                )}
-              </section>
+                  </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.section>
             );
           })}
         </div>
@@ -2036,6 +2362,7 @@ function ProblemRow({
   revisit,
   note,
   noteOpen,
+  index,
   onSolved,
   onBookmark,
   onRevisit,
@@ -2048,14 +2375,22 @@ function ProblemRow({
   revisit: boolean;
   note: string;
   noteOpen: boolean;
+  index: number;
   onSolved: () => void;
   onBookmark: () => void;
   onRevisit: () => void;
   onNote: () => void;
   onNoteChange: (s: string) => void;
 }) {
+  const reduceMotion = useReducedMotion();
   return (
-    <div className={"problem-wrap " + (solved ? "is-solved" : "")}>
+    <motion.div
+      className={"problem-wrap " + (solved ? "is-solved" : "")}
+      layout
+      initial={index < 12 && !reduceMotion ? { opacity: 0, y: 6 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: reduceMotion ? 0.12 : 0.22, delay: index < 12 && !reduceMotion ? index * 0.035 : 0 }}
+    >
       <div className="problem-row">
         <label
           className="problem-check"
@@ -2124,7 +2459,7 @@ function ProblemRow({
           </button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 function Aptitude() {
@@ -2235,6 +2570,7 @@ function AptitudeTopic() {
         >
           <BookOpen size={16} />
           Learn
+          {tab === "learn" && <motion.span className="tab-underline" layoutId="aptitude-tab-underline" />}
         </button>
         <button
           onClick={() => setTab("practice")}
@@ -2242,6 +2578,7 @@ function AptitudeTopic() {
         >
           <Target size={16} />
           Practice test
+          {tab === "practice" && <motion.span className="tab-underline" layoutId="aptitude-tab-underline" />}
         </button>
       </div>
       {tab === "learn" ? (
@@ -2280,6 +2617,7 @@ function AptitudeTopic() {
   );
 }
 function TestEngine() {
+  const reduceMotion = useReducedMotion();
   const { topicId } = useParams(),
     nav = useNavigate();
   const topic = aptitudeTopics.find((t) => t.id === topicId),
@@ -2326,9 +2664,11 @@ function TestEngine() {
     [review, setReview] = useState<number[]>([]),
     [negative, setNegative] = useState(false),
     [seconds, setSeconds] = useState(Math.max(300, qs.length * 60)),
-    [confirm, setConfirm] = useState(false);
+    [confirm, setConfirm] = useState(false),
+    [direction, setDirection] = useState(1);
   const questionStartedAt = useRef(Date.now());
   function goToQuestion(next: number) {
+    setDirection(next >= index ? 1 : -1);
     setQuestionTimes((times) => ({
       ...times,
       [index]: Math.max(
@@ -2365,6 +2705,7 @@ function TestEngine() {
           setQuestionTimes((times) => ({ ...times, [index]: 60 }));
           setIndex((current) => {
             if (current < qs.length - 1) {
+              setDirection(1);
               questionStartedAt.current = Date.now();
               return current + 1;
             }
@@ -2447,13 +2788,21 @@ function TestEngine() {
         <span className="test-topic-label">
           {topic?.name || "Mixed mock test"}
         </span>
-        <span className="test-clock">
+        <span className={"test-clock " + (seconds <= 60 ? "timer-danger" : "")}>
           <Clock3 size={16} />
           {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
         </span>
       </div>
       <div className="test-layout">
-        <section className="test-question card">
+        <AnimatePresence mode="wait" initial={false}>
+        <motion.section
+          key={index}
+          className="test-question card"
+          initial={{ opacity: 0, x: reduceMotion ? 0 : direction * 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: reduceMotion ? 0 : direction * -24 }}
+          transition={{ duration: reduceMotion ? 0.12 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="test-question-meta">
             <span>
               QUESTION {String(index + 1).padStart(2, "0")} <i>/ {qs.length}</i>
@@ -2465,7 +2814,7 @@ function TestEngine() {
             >
               {q?.difficulty || "Medium"}
             </span>
-            <span className="question-clock">
+            <span className={"question-clock " + (questionSeconds <= 10 ? "timer-danger" : "")}>
               <Clock3 size={13} />
               {questionSeconds}s
             </span>
@@ -2532,7 +2881,8 @@ function TestEngine() {
               </button>
             </div>
           </div>
-        </section>
+        </motion.section>
+        </AnimatePresence>
         <aside className="test-sidebar card">
           <div className="test-side-title">
             <b>Question palette</b>
@@ -2680,37 +3030,40 @@ function TestResult() {
           and what to revisit.
         </p>
         <div className="result-score">
-          <b>{score}</b>
-          <span>/ {qs.length} points</span>
+          <ProgressRing value={pct} size={66} />
+          <div>
+            <b><CountUp value={score} /></b>
+            <span>/ {qs.length} points</span>
+          </div>
         </div>
       </div>
       <div className="result-stats">
         <div className="result-stat card">
-          <span className="result-stat-icon green-bg">
+          <span className="result-stat-icon success-bg">
             <CheckCircle2 size={17} />
           </span>
-          <b>{correct}</b>
+          <b><CountUp value={correct} /></b>
           <small>Correct answers</small>
         </div>
         <div className="result-stat card">
-          <span className="result-stat-icon red-bg">
+          <span className="result-stat-icon danger-bg">
             <X size={17} />
           </span>
-          <b>{wrong}</b>
+          <b><CountUp value={wrong} /></b>
           <small>To review</small>
         </div>
         <div className="result-stat card">
-          <span className="result-stat-icon violet-bg">
+          <span className="result-stat-icon accent-bg">
             <ChartNoAxesCombined size={17} />
           </span>
-          <b>{pct}%</b>
+          <b><CountUp value={pct} />%</b>
           <small>Accuracy</small>
         </div>
         <div className="result-stat card">
-          <span className="result-stat-icon amber-bg">
+          <span className="result-stat-icon ember-bg">
             <Trophy size={17} />
           </span>
-          <b>{best}</b>
+          <b><CountUp value={best} /></b>
           <small>Best score</small>
         </div>
       </div>
@@ -2773,7 +3126,7 @@ function TestResult() {
   );
 }
 function Profile() {
-  const { user, solved, bookmarks, revisit, setUser } = useStore(),
+  const { user, solved, bookmarks, revisit, updateProfile } = useStore(),
     [name, setName] = useState(user?.name || ""),
     [college, setCollege] = useState(user?.college || ""),
     [target, setTarget] = useState(user?.target || "Software Engineer"),
@@ -2805,7 +3158,7 @@ function Profile() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                setUser({ ...user!, name, college, target });
+                updateProfile({ name, college, target });
                 setSaved(true);
                 setTimeout(() => setSaved(false), 2400);
               }}
@@ -2944,7 +3297,7 @@ function StreakPage() {
         <div>
           <div className="eyebrow">YOUR CURRENT STREAK</div>
           <div className="streak-count">
-            {streak}
+            <CountUp value={streak} />
             <span> {streak === 1 ? "day" : "days"}</span>
           </div>
           <p>

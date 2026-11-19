@@ -151,8 +151,6 @@ const patternOverrides: Record<string, string[]> = {
     "Sliding Window",
     "Prefix Sum",
   ],
-  strings: ["Fundamentals", "Expand around center / substrings"],
-  hashing: ["Frequency map & complement lookup"],
 };
 const tips: Record<string, string> = {
   "Traversal & In-place": "Single pass, track running state (max, min, count).",

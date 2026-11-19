@@ -1,0 +1,50 @@
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/sora-latin-700-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f1e7d3;
+  --surface: #faf5ea;
+  --surface-2: #e9ddc4;
+  --ink: #1a1610;
+  --muted: #5b5246;
+  --border: #d9cbb0;
+  --accent: #b5442a;
+  --accent-hover: #9a3722;
+  --accent-soft: #f7e8df;
+  --ember: #a84817;
+  --success: #416b44;
+  --warning: #87520e;
+  --danger: #a32a2a;
+  --shadow: 0 12px 34px rgb(26 22 16 / 8%);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-display: "Sora", Inter, sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-code: "JetBrains Mono", monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14100c;
+  --surface: #1d1813;
+  --surface-2: #272019;
+  --ink: #f1e7d3;
+  --muted: #b5a892;
+  --border: #3a3128;
+  --accent: #e0663f;
+  --accent-hover: #ee7a55;
+  --accent-soft: #321912;
+  --ember: #f08a3c;
+  --success: #7fb07f;
+  --warning: #e0a43a;
+  --danger: #e06b6b;
+  --shadow: 0 12px 34px rgb(0 0 0 / 24%);
+}

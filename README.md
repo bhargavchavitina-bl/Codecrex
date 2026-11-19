@@ -7,7 +7,7 @@ CodeCrest is a frontend interview-prep app for B.Tech students. It includes a pa
 ## Requirements and local setup
 
 - Node.js 20 or later
-- A Supabase project for cloud auth and synced progress (optional)
+- A Supabase project for cloud authentication and database synchronization (or explore immediately in guest mode)
 
 ```bash
 npm install
@@ -15,27 +15,50 @@ cp .env.example .env
 npm run dev
 ```
 
-Add the Supabase project URL and publishable/anon key to `.env` to enable Email/Password and Google sign-in and cloud progress. Without Supabase keys, choose **Continue as a guest**; progress and profile settings stay in this browser's localStorage. The client does not include a custom backend.
+Add your Supabase project URL and anon/publishable key to `.env` to enable Email/Password, Google sign-in, and cloud progress sync. Without Supabase keys, choose **Continue as a guest**; progress and profile settings will stay saved in this browser's `localStorage`. The project uses Supabase exclusively for backend services (never Firebase).
 
 ## Supabase setup
 
-In Supabase, create a project and copy the Project URL and anon/public key from **Project Settings → API** into these Vite variables:
+Follow these steps to configure your Supabase backend:
 
-| Variable | Value |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Project URL, such as `https://your-project.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | The project's publishable/anon key |
+1. **Create a project**: Sign in to [Supabase](https://supabase.com) and create a new project.
+2. **Copy API credentials**: In your Supabase dashboard, go to **Project Settings → API**. Copy the **Project URL** and the **anon/public key** into your `.env` file:
+   ```env
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-publishable-key
+   ```
+   *Note: Only use the anon/publishable key in frontend code. Never use or expose the `service_role` key.*
 
-Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor. It creates the `user_progress` table and row-level security policies that limit access to the signed-in user's own row.
+3. **Run database schema**: Open the **SQL Editor** in your Supabase dashboard, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This script creates:
+   - `profiles` table with automatic profile creation trigger on signup.
+   - `problem_progress` table for solved status, bookmarks, and revision notes.
+   - `test_attempts` table for timed MCQ scores and question analytics.
+   - `activity_log` table for local calendar streaks.
+   - Strict Row-Level Security (RLS) policies and performance indexes ensuring users can only read and write their own data.
 
-Enable Email auth and Google under **Authentication → Providers**. For Google, configure the OAuth client in Google Cloud, add its client ID and secret in Supabase, and add your local and production URLs to Supabase's allowed redirect URLs. For signup confirmation and password recovery, configure the Supabase email templates and redirect URLs for your app's deployed domain.
+4. **Configure Authentication Providers**:
+   - Go to **Authentication → Providers**.
+   - **Email**: Ensure Email is enabled. Decide whether to require email confirmation (**Confirm email** toggle in Supabase). If enabled, users will see a confirmation screen with a "Resend email" option upon registration.
+   - **Google**: To enable Google sign-in:
+     1. Create an OAuth 2.0 Web Application client in Google Cloud Console.
+     2. Add your Supabase callback URL (`https://<your-project-ref>.supabase.co/auth/v1/callback`) to Authorized redirect URIs in Google Cloud.
+     3. Copy the Google Client ID and Client Secret into Supabase **Authentication → Providers → Google**, and enable the provider.
 
-The anon/publishable key is intended for browser use. Never put a Supabase service-role key in this app. Row-level security is essential: do not rely on UI checks to protect user data.
+5. **Set Site URL & Redirect URLs**:
+   - Under **Authentication → URL Configuration**:
+     - Set **Site URL** to your local or primary deployed domain (e.g., `http://localhost:5173` or `https://your-domain.vercel.app`).
+     - In **Redirect URLs**, add:
+       - `http://localhost:5173/**`
+       - `https://your-domain.vercel.app/**`
+
+6. **Deploy & Environment Variables**:
+   - In your hosting platform settings (Vercel, Netlify, etc.), set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+   - Redeploy your application.
 
 ## Routes
 
-- Public: `/`, `/login`, `/signup`, `/forgot-password`
-- Protected: `/dashboard`, `/dsa`, `/dsa/:topicId`, `/aptitude`, `/aptitude/:topicId`, `/test/:topicId`, `/test/:topicId/result`, `/profile`, `/streak`
+- **Public**: `/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`
+- **Protected**: `/dashboard`, `/dsa`, `/dsa/:topicId`, `/aptitude`, `/aptitude/:topicId`, `/test/:topicId`, `/test/:topicId/result`, `/profile`, `/streak`
 
 ## Content and scripts
 
@@ -46,11 +69,9 @@ The anon/publishable key is intended for browser use. Never put a Supabase servi
 - Validate MCQ schema, topic counts, duplicate IDs, and selected arithmetic answers: `npm run verify:mcqs`
 - Typecheck, lint, and production build: `npm run typecheck`, `npm run lint`, `npm run build`
 
-The slug check uses LeetCode's public problem URLs. If LeetCode rate limits or denies requests, the script reports those requests as inconclusive instead of incorrectly marking every slug broken. The curated seed uses free problem links; company names are text labels for practice context.
-
 ## Static deployment
 
-`npm run build` writes to `dist/`. Deploy that directory to Vercel, Netlify, or GitHub Pages. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the host's environment settings if using Supabase. Configure the host to serve `index.html` for application routes (SPA fallback). For a GitHub Pages repository subpath, set Vite's `base` and configure a matching router basename.
+`npm run build` writes the production bundle to `dist/`. Deploy that directory to Vercel, Netlify, or GitHub Pages. SPA routing rewrites are configured in `vercel.json` and `public/_redirects`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your hosting platform's environment settings.
 
 ## Future enhancements
 
