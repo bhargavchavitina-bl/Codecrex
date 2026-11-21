@@ -4,7 +4,9 @@ export type Problem = {
   title: string;
   difficulty: "Easy" | "Medium" | "Hard";
   topicId: string;
+  topicIds?: string[];
   pattern: string;
+  patternByTopic?: Record<string, string>;
   leetcodeSlug: string;
   companies: string[];
   tags: string[];
@@ -105,16 +107,23 @@ const seed: [string, string, string, string, string, number][] = [
     "strings",
     "Valid Anagram",
     "Easy",
-    "Frequency & Parsing",
+    "Fundamentals",
     "valid-anagram",
     2,
   ],
-  ["strings", "Valid Palindrome", "Easy", "Palindromes", "valid-palindrome", 2],
+  [
+    "strings",
+    "Valid Palindrome",
+    "Easy",
+    "Expand around center / substrings",
+    "valid-palindrome",
+    2,
+  ],
   [
     "strings",
     "Longest Palindromic Substring",
     "Medium",
-    "Palindromes",
+    "Expand around center / substrings",
     "longest-palindromic-substring",
     3,
   ],
@@ -122,7 +131,7 @@ const seed: [string, string, string, string, string, number][] = [
     "strings",
     "Group Anagrams",
     "Medium",
-    "Frequency & Parsing",
+    "Fundamentals",
     "group-anagrams",
     3,
   ],
@@ -130,7 +139,7 @@ const seed: [string, string, string, string, string, number][] = [
     "strings",
     "Longest Common Prefix",
     "Easy",
-    "String Matching",
+    "Fundamentals",
     "longest-common-prefix",
     1,
   ],
@@ -138,7 +147,7 @@ const seed: [string, string, string, string, string, number][] = [
     "strings",
     "Minimum Window Substring",
     "Hard",
-    "String Matching",
+    "Expand around center / substrings",
     "minimum-window-substring",
     3,
   ],
@@ -146,40 +155,32 @@ const seed: [string, string, string, string, string, number][] = [
     "strings",
     "Find the Index of the First Occurrence in a String",
     "Easy",
-    "String Matching",
+    "Fundamentals",
     "find-the-index-of-the-first-occurrence-in-a-string",
     1,
   ],
   [
     "hashing",
-    "Subarray Sum Equals K",
-    "Medium",
-    "Prefix Hashing",
-    "subarray-sum-equals-k",
-    3,
-  ],
-  [
-    "hashing",
     "Longest Consecutive Sequence",
     "Medium",
-    "Sets & Lookups",
+    "Frequency map & complement lookup",
     "longest-consecutive-sequence",
     3,
   ],
   [
-    "hashing",
+    "heap",
     "Top K Frequent Elements",
     "Medium",
-    "Frequency Maps",
+    "Top K",
     "top-k-frequent-elements",
     3,
   ],
-  ["hashing", "4Sum II", "Medium", "Frequency Maps", "4sum-ii", 2],
+  ["hashing", "4Sum II", "Medium", "Frequency map & complement lookup", "4sum-ii", 2],
   [
     "hashing",
     "Isomorphic Strings",
     "Easy",
-    "Frequency Maps",
+    "Frequency map & complement lookup",
     "isomorphic-strings",
     1,
   ],
@@ -192,14 +193,7 @@ const seed: [string, string, string, string, string, number][] = [
     "trapping-rain-water",
     3,
   ],
-  [
-    "two-pointers",
-    "Valid Palindrome",
-    "Easy",
-    "Opposite Ends",
-    "valid-palindrome",
-    2,
-  ],
+
   [
     "two-pointers",
     "Remove Duplicates from Sorted Array",
@@ -225,14 +219,7 @@ const seed: [string, string, string, string, string, number][] = [
     "longest-substring-without-repeating-characters",
     3,
   ],
-  [
-    "sliding-window",
-    "Minimum Window Substring",
-    "Hard",
-    "Variable Window",
-    "minimum-window-substring",
-    3,
-  ],
+
   [
     "sliding-window",
     "Permutation in String",
@@ -861,7 +848,7 @@ const more: [string, string, string, string, string, number][] = [
     "strings",
     "Reverse Words in a String",
     "Medium",
-    "Frequency & Parsing",
+    "Fundamentals",
     "reverse-words-in-a-string",
     2,
   ],
@@ -869,7 +856,7 @@ const more: [string, string, string, string, string, number][] = [
     "strings",
     "String to Integer (atoi)",
     "Medium",
-    "Frequency & Parsing",
+    "Fundamentals",
     "string-to-integer-atoi",
     2,
   ],
@@ -877,27 +864,11 @@ const more: [string, string, string, string, string, number][] = [
     "strings",
     "Palindromic Substrings",
     "Medium",
-    "Palindromes",
+    "Expand around center / substrings",
     "palindromic-substrings",
     2,
   ],
-  [
-    "strings",
-    "Longest Palindromic Subsequence",
-    "Medium",
-    "Palindromes",
-    "longest-palindromic-subsequence",
-    2,
-  ],
-  ["hashing", "Happy Number", "Easy", "Frequency Maps", "happy-number", 1],
-  [
-    "hashing",
-    "Group Anagrams",
-    "Medium",
-    "Frequency Maps",
-    "group-anagrams",
-    3,
-  ],
+  ["two-pointers", "Happy Number", "Easy", "Fast & Slow", "happy-number", 1],
   [
     "two-pointers",
     "Two Sum II - Input Array Is Sorted",
@@ -1456,19 +1427,77 @@ const companies = [
   "Atlassian",
   "Uber",
 ];
+export const sharedProblemsConfig: Record<
+  string,
+  { topicIds: string[]; patternByTopic: Record<string, string> }
+> = {
+  "group-anagrams": {
+    topicIds: ["strings", "hashing"],
+    patternByTopic: {
+      strings: "Fundamentals",
+      hashing: "Frequency map & complement lookup",
+    },
+  },
+  "subarray-sum-equals-k": {
+    topicIds: ["prefix-sum", "hashing"],
+    patternByTopic: {
+      "prefix-sum": "Prefix + Hashing",
+      hashing: "Frequency map & complement lookup",
+    },
+  },
+  "top-k-frequent-elements": {
+    topicIds: ["heap", "hashing"],
+    patternByTopic: {
+      heap: "Top K",
+      hashing: "Frequency map & complement lookup",
+    },
+  },
+  "valid-palindrome": {
+    topicIds: ["strings", "two-pointers"],
+    patternByTopic: {
+      strings: "Expand around center / substrings",
+      "two-pointers": "Opposite Ends",
+    },
+  },
+  "minimum-window-substring": {
+    topicIds: ["strings", "sliding-window"],
+    patternByTopic: {
+      strings: "Expand around center / substrings",
+      "sliding-window": "Variable Window",
+    },
+  },
+};
+
+export function problemMatchesTopic(p: Problem, topicId: string): boolean {
+  return p.topicId === topicId || (p.topicIds ? p.topicIds.includes(topicId) : false);
+}
+
+export function getProblemPatternForTopic(p: Problem, topicId: string): string {
+  if (p.patternByTopic && p.patternByTopic[topicId]) {
+    return p.patternByTopic[topicId];
+  }
+  return p.pattern;
+}
+
 const allSeed = [...seed, ...more];
 export const problems: Problem[] = allSeed
   .map(
-    ([topicId, title, difficulty, pattern, leetcodeSlug, importance], i) => ({
-      id: `${topicId}-${leetcodeSlug}`,
-      topicId,
-      title,
-      difficulty: difficulty as Problem["difficulty"],
-      pattern,
-      leetcodeSlug,
-      companies: companies.slice(i % 5, (i % 5) + 2),
-      tags: [pattern.toLowerCase()],
-      importance: importance as Problem["importance"],
-    }),
+    ([topicId, title, difficulty, pattern, leetcodeSlug, importance], i) => {
+      const shared = sharedProblemsConfig[leetcodeSlug];
+      const assignedPattern = shared?.patternByTopic?.[topicId] || pattern;
+      return {
+        id: `${topicId}-${leetcodeSlug}`,
+        topicId,
+        topicIds: shared ? shared.topicIds : undefined,
+        title,
+        difficulty: difficulty as Problem["difficulty"],
+        pattern: assignedPattern,
+        patternByTopic: shared ? shared.patternByTopic : undefined,
+        leetcodeSlug,
+        companies: companies.slice(i % 5, (i % 5) + 2),
+        tags: [assignedPattern.toLowerCase()],
+        importance: importance as Problem["importance"],
+      };
+    },
   );
 export const allTopics = topics;

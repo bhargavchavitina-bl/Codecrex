@@ -325,6 +325,20 @@ export const useStore = create<State>()(
 // ---------------------------------------------------------------------------
 // AUTHENTICATION FUNCTIONS
 // ---------------------------------------------------------------------------
+export let lastAuthEvent = "INITIAL";
+
+function logDevAuthError(action: string, error: unknown) {
+  if (import.meta.env.DEV) {
+    const err = error as { message?: string; status?: number; code?: string };
+    console.error(`Auth call [${action}] failed:`, {
+      message: err?.message,
+      status: err?.status,
+      code: err?.code,
+      error,
+    });
+  }
+}
+
 function setSupabaseSessionUser(user: {
   id: string;
   email?: string;
@@ -358,6 +372,7 @@ export async function login(email: string, password: string) {
   });
 
   if (error) {
+    logDevAuthError("signInWithPassword", error);
     throw new Error(mapAuthError(error));
   }
 
@@ -387,6 +402,7 @@ export async function signup(name: string, email: string, password: string) {
   });
 
   if (error) {
+    logDevAuthError("signUp", error);
     throw new Error(mapAuthError(error));
   }
 
@@ -413,6 +429,7 @@ export async function resendConfirmationEmail(email: string) {
   });
 
   if (error) {
+    logDevAuthError("resend", error);
     throw new Error(mapAuthError(error));
   }
 }
@@ -429,6 +446,7 @@ export async function googleLogin() {
   });
 
   if (error) {
+    logDevAuthError("signInWithOAuth", error);
     throw new Error(mapAuthError(error));
   }
 }
@@ -442,6 +460,7 @@ export async function resetPassword(email: string) {
   });
 
   if (error) {
+    logDevAuthError("resetPasswordForEmail", error);
     throw new Error(mapAuthError(error));
   }
 }
@@ -455,6 +474,7 @@ export async function updatePassword(newPassword: string) {
   });
 
   if (error) {
+    logDevAuthError("updateUser", error);
     throw new Error(mapAuthError(error));
   }
 }
@@ -462,9 +482,12 @@ export async function updatePassword(newPassword: string) {
 export async function logout() {
   if (supabase) {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        logDevAuthError("signOut", error);
+      }
     } catch (err) {
-      console.error("Sign out error:", err);
+      logDevAuthError("signOut_exception", err);
     }
   }
   useStore.getState().clearProgress();
@@ -499,7 +522,7 @@ export function subscribeAuth() {
     .then(({ data: { session }, error }) => {
       if (!isSubscribed) return;
       if (error) {
-        console.error("Error checking session:", error);
+        logDevAuthError("getSession", error);
       }
 
       if (session?.user) {
@@ -517,7 +540,7 @@ export function subscribeAuth() {
     })
     .catch((err) => {
       if (!isSubscribed) return;
-      console.error("Error retrieving initial session:", err);
+      logDevAuthError("getSession_catch", err);
       useStore.getState().setAuthReady(true);
     });
 
@@ -526,6 +549,7 @@ export function subscribeAuth() {
     data: { subscription },
   } = supabase.auth.onAuthStateChange((event, session) => {
     if (!isSubscribed) return;
+    lastAuthEvent = event;
 
     if (session?.user) {
       const currentUser = useStore.getState().user;

@@ -49,7 +49,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { topics } from "./data/topics";
-import { problems, type Problem } from "./data/problems";
+import {
+  problems,
+  problemMatchesTopic,
+  getProblemPatternForTopic,
+  type Problem,
+} from "./data/problems";
 import { aptitudeTopics, aptitudeQuestions } from "./data/aptitude";
 import {
   useStore,
@@ -65,7 +70,9 @@ import {
   supabaseEnabled,
   isSupabaseConfigured,
   missingSupabaseKeys,
+  lastAuthEvent,
 } from "./store";
+import { supabase } from "./lib/supabase";
 import LearnContent from "./components/LearnContent";
 function Logo() {
   const gradientId = `cc-gradient-${useId().replace(/:/g, "")}`;
@@ -153,6 +160,9 @@ function App() {
       <Route path="/signup" element={<AuthPage kind="signup" />} />
       <Route path="/forgot-password" element={<AuthPage kind="forgot" />} />
       <Route path="/reset-password" element={<AuthPage kind="reset" />} />
+      {import.meta.env.DEV && (
+        <Route path="/auth-debug" element={<AuthDebugPage />} />
+      )}
       <Route element={<Protected />}>
         <Route
           path="/dashboard"
@@ -507,6 +517,163 @@ function Landing() {
     </div>
   );
 }
+
+function AuthDebugPage() {
+  const { user } = useStore();
+  const [testResult, setTestResult] = useState<{
+    status: string;
+    details?: unknown;
+    error?: unknown;
+  } | null>(null);
+  const [sessionData, setSessionData] = useState<{
+    hasSession: boolean;
+    userId: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadSession() {
+      if (!supabase) return;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("AuthDebug getSession error:", error);
+        }
+        setSessionData({
+          hasSession: !!data?.session,
+          userId: data?.session?.user?.id ?? null,
+        });
+      } catch (err) {
+        console.error("AuthDebug getSession exception:", err);
+      }
+    }
+    void loadSession();
+  }, []);
+
+  async function testSelect() {
+    if (!supabase) {
+      setTestResult({
+        status: "Supabase not configured",
+        error: "Supabase client is null. Check VITE_SUPABASE_* variables.",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_progress")
+        .select("*")
+        .limit(1);
+
+      if (error) {
+        setTestResult({
+          status: "Error",
+          error: {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+          },
+        });
+      } else {
+        setTestResult({
+          status: "Success",
+          details: {
+            message: "Successfully queried user_progress",
+            rowCount: data?.length ?? 0,
+            sample: data,
+          },
+        });
+      }
+    } catch (err) {
+      setTestResult({
+        status: "Exception",
+        error: (err as Error).message || String(err),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void testSelect();
+  }, []);
+
+  const hasUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
+  const hasKey = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+  return (
+    <div className="content-wrap" style={{ maxWidth: 800, margin: "40px auto", padding: "0 20px" }}>
+      <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
+        <div>
+          <span className="eyebrow" style={{ color: "var(--accent, #f97316)" }}>DEV DIAGNOSTICS</span>
+          <h2 style={{ margin: "6px 0 8px" }}>Auth & Supabase Debug</h2>
+          <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>
+            Dev-only route. Excluded from production builds.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gap: 12, background: "var(--surface, #18181b)", padding: 16, borderRadius: 8, border: "1px solid var(--border, #27272a)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+            <span><b>VITE_SUPABASE_URL present:</b></span>
+            <code style={{ color: hasUrl ? "#22c55e" : "#ef4444" }}>{String(hasUrl)}</code>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+            <span><b>VITE_SUPABASE_ANON_KEY present:</b></span>
+            <code style={{ color: hasKey ? "#22c55e" : "#ef4444" }}>{String(hasKey)}</code>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+            <span><b>window.location.origin:</b></span>
+            <code>{origin}</code>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+            <span><b>Current Session:</b></span>
+            <code>{sessionData?.hasSession ? "Active" : "None"}</code>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+            <span><b>Current User ID:</b></span>
+            <code>{sessionData?.userId || user?.uid || "null"}</code>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span><b>Last onAuthStateChange Event:</b></span>
+            <code>{lastAuthEvent}</code>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <b>Result of test select on user_progress:</b>
+            <button
+              type="button"
+              className="btn btn-quiet"
+              style={{ fontSize: 13, padding: "4px 10px" }}
+              disabled={loading}
+              onClick={() => void testSelect()}
+            >
+              {loading ? "Testing..." : "Rerun test query"}
+            </button>
+          </div>
+          <pre
+            style={{
+              margin: 0,
+              padding: 16,
+              background: "var(--surface, #18181b)",
+              borderRadius: 8,
+              border: "1px solid var(--border, #27272a)",
+              overflowX: "auto",
+              fontSize: 13,
+              color: testResult?.status === "Success" ? "#22c55e" : "#f87171",
+            }}
+          >
+            {JSON.stringify(testResult, null, 2)}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuthPage({
   kind,
 }: {
@@ -1482,7 +1649,9 @@ function Dashboard() {
     pct = Math.round((solved.length / problems.length) * 100),
     next =
       topics.find((t) =>
-        problems.some((p) => p.topicId === t.id && !solved.includes(p.id)),
+        problems.some(
+          (p) => problemMatchesTopic(p, t.id) && !solved.includes(p.id),
+        ),
       ) || topics[0],
     today = new Date().toLocaleDateString("en-CA"),
     streak = calcStreak(activeDays, today);
@@ -1689,7 +1858,7 @@ function Dashboard() {
             <span>
               <b>{next.name}</b>
               <small>
-                {problems.filter((p) => p.topicId === next.id).length} curated
+                {problems.filter((p) => problemMatchesTopic(p, next.id)).length} curated
                 problems · {next.category}
               </small>
             </span>
@@ -1896,7 +2065,7 @@ function DsaRoadmap() {
         </div>
         <div className="topic-side-links">
           {topics.map((t, i) => {
-            const all = problems.filter((p) => p.topicId === t.id),
+            const all = problems.filter((p) => problemMatchesTopic(p, t.id)),
               n = all.filter((p) => solved.includes(p.id)).length;
             return (
               <Link key={t.id} to={`/dsa/${t.id}`} className="topic-side-link">
@@ -1999,7 +2168,7 @@ function DsaRoadmap() {
         </div>
         <div className="topic-grid">
           {filtered.map((t, i) => {
-            const ps = problems.filter((p) => p.topicId === t.id),
+            const ps = problems.filter((p) => problemMatchesTopic(p, t.id)),
               n = ps.filter((p) => solved.includes(p.id)).length,
               diff = ["Easy", "Medium", "Hard"].map(
                 (d) => ps.filter((p) => p.difficulty === d).length,
@@ -2063,7 +2232,7 @@ function DsaRoadmap() {
 const filters = ["All", "Easy", "Medium", "Hard"];
 function TopicPage() {
   const { topicId } = useParams(),
-    topic = topics.find((t) => t.id === topicId);
+    topic = topics.find((t) => t.id.toLowerCase() === topicId?.toLowerCase());
   const { solved, bookmarks, revisit, notes, toggle, note, markSession } =
     useStore();
   const [query, setQuery] = useState(""),
@@ -2075,8 +2244,13 @@ function TopicPage() {
     [open, setOpen] = useState<string[]>([]),
     [noteOpen, setNoteOpen] = useState<string | null>(null);
   if (!topic) return <NotFound />;
-  const all = problems.filter((p) => p.topicId === topic.id);
-  const availablePatterns = [...new Set(all.map((p) => p.pattern))];
+  const all = problems.filter((p) => problemMatchesTopic(p, topic.id));
+  if (import.meta.env.DEV && all.length === 0) {
+    console.warn(`[DEV WARNING] Topic "${topic.name}" (${topic.id}) has 0 problems.`);
+  }
+  const availablePatterns = [
+    ...new Set(all.map((p) => getProblemPatternForTopic(p, topic.id))),
+  ];
   const companies = [...new Set(all.flatMap((p) => p.companies))].sort();
   const passing = all
     .filter(
@@ -2091,25 +2265,46 @@ function TopicPage() {
                 ? bookmarks.includes(p.id)
                 : revisit.includes(p.id))) &&
         (company === "All companies" || p.companies.includes(company)) &&
-        (pattern === "All patterns" || p.pattern === pattern) &&
+        (pattern === "All patterns" ||
+          getProblemPatternForTopic(p, topic.id) === pattern) &&
         (p.title.toLowerCase().includes(query.toLowerCase()) ||
           p.companies.some((c) =>
             c.toLowerCase().includes(query.toLowerCase()),
           ) ||
-          p.pattern.toLowerCase().includes(query.toLowerCase())),
+          getProblemPatternForTopic(p, topic.id)
+            .toLowerCase()
+            .includes(query.toLowerCase())),
     )
     .sort((a, b) =>
       sort ? b.importance - a.importance : a.title.localeCompare(b.title),
     );
-  const byPattern = availablePatterns
-    .map((name) => ({
-      name,
-      tip:
-        topic.patterns.find((item) => item.name === name)?.tip ??
-        `Practice problems that use ${name.toLowerCase()}.`,
-      items: passing.filter((problem) => problem.pattern === name),
-    }))
-    .filter((group) => group.items.length > 0);
+
+  const definedPatternNames = new Set(topic.patterns.map((item) => item.name));
+  const definedGroups = topic.patterns.map((item) => ({
+    name: item.name,
+    tip: item.tip,
+    items: passing.filter(
+      (problem) =>
+        getProblemPatternForTopic(problem, topic.id) === item.name,
+    ),
+  }));
+  const otherProblems = passing.filter(
+    (problem) =>
+      !definedPatternNames.has(getProblemPatternForTopic(problem, topic.id)),
+  );
+  const otherGroup =
+    otherProblems.length > 0
+      ? [
+          {
+            name: "Other",
+            tip: "Additional problems for this topic.",
+            items: otherProblems,
+          },
+        ]
+      : [];
+  const byPattern = [...definedGroups, ...otherGroup].filter(
+    (group) => group.items.length > 0,
+  );
   function solvedToggle(id: string) {
     toggle("solved", id);
     if (!solved.includes(id)) markSession();
@@ -2267,9 +2462,13 @@ function TopicPage() {
       ) : (
         <div className="pattern-list">
           {byPattern.map((p, pi) => {
-            const count = all.filter((x) => x.pattern === p.name).length,
+            const count = all.filter(
+              (x) => getProblemPatternForTopic(x, topic.id) === p.name,
+            ).length,
               done = all.filter(
-                (x) => x.pattern === p.name && solved.includes(x.id),
+                (x) =>
+                  getProblemPatternForTopic(x, topic.id) === p.name &&
+                  solved.includes(x.id),
               ).length,
               isOpen = open.length === 0 || open.includes(p.name);
             return (

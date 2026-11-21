@@ -5,6 +5,7 @@ export type Topic = {
   description: string;
   patterns: { name: string; tip: string; problems: string[] }[];
 };
+
 const groups: [string, string, string, string[]][] = [
   [
     "arrays",
@@ -16,13 +17,18 @@ const groups: [string, string, string, string[]][] = [
     "strings",
     "Strings",
     "Transform, compare and parse strings",
-    ["Frequency & Parsing", "Palindromes", "String Matching"],
+    [
+      "Fundamentals",
+      "Expand around center / substrings",
+    ],
   ],
   [
     "hashing",
     "Hashing",
     "Trade space for near-constant lookup",
-    ["Frequency Maps", "Sets & Lookups", "Prefix Hashing"],
+    [
+      "Frequency map & complement lookup",
+    ],
   ],
   [
     "two-pointers",
@@ -144,16 +150,21 @@ const groups: [string, string, string, string[]][] = [
     ["Merge & Insert", "Sweep Line", "Meeting Rooms"],
   ],
 ];
+
 const patternOverrides: Record<string, string[]> = {
-  arrays: [
-    "Traversal & In-place",
-    "Two Pointers",
-    "Sliding Window",
-    "Prefix Sum",
+  strings: [
+    "Fundamentals",
+    "Expand around center / substrings",
+  ],
+  hashing: [
+    "Frequency map & complement lookup",
   ],
 };
+
 const tips: Record<string, string> = {
   "Traversal & In-place": "Single pass, track running state (max, min, count).",
+  "Kadane & Subarrays": "Track current max ending here and global max.",
+  "Two-dimensional Arrays": "Traverse grids, boundary simulations, or 2D coordinates.",
   "Two Pointers": "Sorted input, pairs/triplets, or opposite-end traversal.",
   "Sliding Window": "Look for longest, shortest, fixed size k, or at most K.",
   "Prefix Sum": "Range sums, subarray sums, or repeated prefix-based queries.",
@@ -164,6 +175,7 @@ const tips: Record<string, string> = {
   "Frequency map & complement lookup":
     "Need O(1) “have I seen this?” lookups or counts.",
 };
+
 export const topics: Topic[] = groups.map(
   ([id, name, description, patterns]) => ({
     id,

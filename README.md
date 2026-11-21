@@ -65,9 +65,13 @@ Follow these steps to configure your Supabase backend:
 - DSA topics and problem sheet: `src/data/topics.ts`, `src/data/problems.ts`
 - Aptitude topics and original MCQs: `src/data/aptitude.ts`, `src/data/aptitude-expanded.ts`
 - Lessons: `src/components/LearnContent.tsx`
+- Audit and validate DSA problem and pattern distribution: `npm run check:data`
 - Check for unresolved LeetCode links: `npm run check:slugs`
 - Validate MCQ schema, topic counts, duplicate IDs, and selected arithmetic answers: `npm run verify:mcqs`
 - Typecheck, lint, and production build: `npm run typecheck`, `npm run lint`, `npm run build`
+- Dev-only diagnostics route: `/auth-debug` (inspects Supabase env presence, session, last auth event, and database test select; stripped from production builds)
+
+> Note on scripts: All validation scripts (`check:data`, `check:slugs`, `verify:mcqs`) use `tsx` to run TypeScript files directly across all supported Node versions (Node 20+). If invoking them directly with Node, Node 22.6+ is required with `--experimental-strip-types`.
 
 ## Static deployment
 
