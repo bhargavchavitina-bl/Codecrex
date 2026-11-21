@@ -1,5 +1,5 @@
 // scripts/check-contrast.ts
-// WCAG AA Contrast Ratio Checker for CodeCrest design tokens
+// WCAG AA Contrast Ratio Checker for CodeCrex design tokens
 
 interface ColorTheme {
   name: string;
@@ -80,7 +80,7 @@ function getContrastRatio(hex1: string, hex2: string): number {
 }
 
 console.log("════════════════════════════════════════════════════════════════════════════");
-console.log("                CODECREST WCAG AA (>= 4.5:1) CONTRAST AUDIT                 ");
+console.log("                 CODECREX WCAG AA (>= 4.5:1) CONTRAST AUDIT                 ");
 console.log("════════════════════════════════════════════════════════════════════════════\n");
 
 let allPassed = true;

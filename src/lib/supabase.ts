@@ -28,7 +28,7 @@ export const missingSupabaseKeys = missingEnvVars;
 
 if (!isSupabaseConfigured && isDev) {
   console.warn(
-    `[CodeCrest Dev Warning] Supabase is not configured. Missing environment variable(s): ${missingEnvVars.join(", ")}. Account authentication will be disabled, but guest mode is available.`,
+    `[CodeCrex Dev Warning] Supabase is not configured. Missing environment variable(s): ${missingEnvVars.join(", ")}. Account authentication will be disabled, but guest mode is available.`,
   );
 }
 

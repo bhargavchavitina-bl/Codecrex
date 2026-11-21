@@ -371,7 +371,7 @@ function setSupabaseSessionUser(
 
 export async function login(email: string, password: string) {
   if (!supabase) {
-    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrex.");
   }
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
@@ -418,7 +418,7 @@ export async function login(email: string, password: string) {
 
 export async function signup(name: string, email: string, password: string) {
   if (!supabase) {
-    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrex.");
   }
 
   const trimmedEmail = email.trim();
@@ -484,7 +484,7 @@ export async function signup(name: string, email: string, password: string) {
 
     setSupabaseSessionUser(data.user, trimmedName);
     // 3d. Show welcome toast
-    useStore.getState().showToast(`Welcome to CodeCrest, ${trimmedName || "Learner"}!`, "success");
+    useStore.getState().showToast(`Welcome to CodeCrex, ${trimmedName || "Learner"}!`, "success");
 
     return { needsConfirmation: false };
   }
@@ -513,7 +513,7 @@ export async function resendConfirmationEmail(email: string) {
 
 export async function resetPassword(email: string) {
   if (!supabase) {
-    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
+    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrex.");
   }
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${window.location.origin}/reset-password`,

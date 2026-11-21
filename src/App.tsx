@@ -79,7 +79,7 @@ function Logo() {
     <Link
       className="brand"
       to="/"
-      aria-label="CodeCrest home"
+      aria-label="CodeCrex home"
     >
       <svg width="38" height="38" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
@@ -106,7 +106,7 @@ function Logo() {
       </svg>
       <span className="wordmark">
         <span>Code</span>
-        <b>Crest</b>
+        <b>Crex</b>
       </span>
     </Link>
   );
@@ -304,11 +304,11 @@ function Landing() {
             <div className="eyebrow">
               <span className="eyebrow-dot" /> YOUR NEXT CHAPTER STARTS HERE
             </div>
-            <h1 className="hero-headline" aria-label="Code. Climb. Crest.">
+            <h1 className="hero-headline" aria-label="Code. Climb. Crex.">
               {[
                 { word: "Code.", delay: 0 },
                 { word: "Climb.", delay: 0.08 },
-                { word: "Crest.", delay: 0.16, accent: true },
+                { word: "Crex.", delay: 0.16, accent: true },
               ].map(({ word, delay, accent }) => (
                 <motion.span
                   key={word}
@@ -350,7 +350,7 @@ function Landing() {
           </div>
           <div
             className="hero-art"
-            aria-label="CodeCrest learning dashboard preview"
+            aria-label="CodeCrex learning dashboard preview"
           >
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
@@ -510,8 +510,8 @@ function Landing() {
       </main>
       <footer className="footer wrap">
         <Logo />
-        <p>Code. Climb. Crest.</p>
-        <small>© 2026 CodeCrest · Made for learners, by learners.</small>
+        <p>Code. Climb. Crex.</p>
+        <small>© 2026 CodeCrex · Made for learners, by learners.</small>
       </footer>
     </div>
   );
@@ -705,7 +705,7 @@ function AuthLayout({
         </div>
         <div className="auth-brand-hero">
           <h2 className="auth-brand-headline">
-            Code. Climb. <em className="auth-brand-em">Crest.</em>
+            Code. Climb. <em className="auth-brand-em">Crex.</em>
           </h2>
           <p className="auth-brand-desc">
             Find your rhythm, learn the patterns, and get closer to the role you want.
@@ -744,7 +744,7 @@ function AuthLayout({
           </div>
         </div>
         <div className="auth-brand-foot">
-          <span>Code. Climb. Crest. &bull; Interview Preparation</span>
+          <span>Code. Climb. Crex. &bull; Interview Preparation</span>
         </div>
       </aside>
 
@@ -881,7 +881,7 @@ function AuthPage({
     <>
       {kind === "login" ? (
         <>
-          New to CodeCrest? <Link to="/signup">Create an account</Link>
+          New to CodeCrex? <Link to="/signup">Create an account</Link>
         </>
       ) : kind === "signup" ? (
         <>
@@ -1639,7 +1639,7 @@ function GlobalSearch({ onClose }: { onClose: () => void }) {
         className="global-search-modal card"
         role="dialog"
         aria-modal="true"
-        aria-label="Search CodeCrest"
+        aria-label="Search CodeCrex"
       >
         <div className="global-search-input">
           <Search size={18} />
@@ -3729,7 +3729,7 @@ function NotFound() {
         The page you’re looking for may have moved. Let’s get you back on track.
       </p>
       <Link to="/" className="btn btn-primary">
-        Back to CodeCrest <ArrowRight size={15} />
+        Back to CodeCrex <ArrowRight size={15} />
       </Link>
     </div>
   );

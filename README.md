@@ -1,8 +1,8 @@
-# CodeCrest
+# CodeCrex
 
-**Code. Climb. Crest.**
+**Code. Climb. Crex.**
 
-CodeCrest is a frontend interview-prep app for B.Tech students. It includes a pattern-based DSA roadmap, personal problem notes and revision flags, aptitude lessons, timed MCQ practice, progress tracking, and a local-calendar streak.
+CodeCrex is a frontend interview-prep app for B.Tech students. It includes a pattern-based DSA roadmap, personal problem notes and revision flags, aptitude lessons, timed MCQ practice, progress tracking, and a local-calendar streak.
 
 ## Requirements and local setup
 

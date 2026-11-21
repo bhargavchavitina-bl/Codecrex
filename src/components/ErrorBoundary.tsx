@@ -8,7 +8,7 @@ export default class ErrorBoundary extends Component<
     return { failed: true };
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("CodeCrest rendering error", error, info);
+    console.error("CodeCrex rendering error", error, info);
   }
   render() {
     if (this.state.failed)
@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component<
             className="btn btn-primary"
             onClick={() => window.location.reload()}
           >
-            Refresh CodeCrest
+            Refresh CodeCrex
           </button>
         </main>
       );

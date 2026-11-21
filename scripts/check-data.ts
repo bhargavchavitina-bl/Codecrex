@@ -35,7 +35,7 @@ export function checkData(verbose = true) {
 
   if (verbose) {
     console.log("════════════════════════════════════════════════════════════");
-    console.log("                  CODECREST DATA AUDIT REPORT               ");
+    console.log("                  CODECREX DATA AUDIT REPORT                ");
     console.log("════════════════════════════════════════════════════════════\n");
   }
 
