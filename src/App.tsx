@@ -33,7 +33,6 @@ import {
   Menu,
   Moon,
   Search,
-  ShieldCheck,
   Star,
   Sun,
   Trophy,
@@ -47,6 +46,10 @@ import {
   FileText,
   Lightbulb,
   AlertCircle,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
 } from "lucide-react";
 import { topics } from "./data/topics";
 import {
@@ -60,14 +63,12 @@ import {
   useStore,
   login,
   signup,
-  googleLogin,
   resetPassword,
   updatePassword,
   resendConfirmationEmail,
   logout,
   subscribeAuth,
   saveProgress,
-  supabaseEnabled,
   isSupabaseConfigured,
   missingSupabaseKeys,
   lastAuthEvent,
@@ -674,25 +675,143 @@ function AuthDebugPage() {
   );
 }
 
+function getPasswordStrength(pwd: string): "weak" | "ok" | "strong" {
+  if (pwd.length < 6) return "weak";
+  const hasLetters = /[a-zA-Z]/.test(pwd);
+  const hasDigits = /\d/.test(pwd);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(pwd);
+  if (pwd.length >= 8 && hasLetters && hasDigits && hasSpecial) return "strong";
+  if (pwd.length >= 6 && hasLetters && hasDigits) return "ok";
+  if (pwd.length >= 10 && hasLetters) return "ok";
+  return "weak";
+}
+
+function AuthLayout({
+  eyebrow,
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
+  return (
+    <div className="auth-layout">
+      <aside className="auth-brand-panel hidden lg:flex">
+        <div className="auth-brand-top">
+          <Logo />
+        </div>
+        <div className="auth-brand-hero">
+          <h2 className="auth-brand-headline">
+            Code. Climb. <em className="auth-brand-em">Crest.</em>
+          </h2>
+          <p className="auth-brand-desc">
+            Find your rhythm, learn the patterns, and get closer to the role you want.
+          </p>
+
+          <div className="auth-benefits">
+            <div className="auth-benefit-item">
+              <div className="auth-benefit-icon">
+                <Code2 size={18} />
+              </div>
+              <div>
+                <b>DSA Roadmap</b>
+                <p>215 hand-picked problems across 22 patterns</p>
+              </div>
+            </div>
+
+            <div className="auth-benefit-item">
+              <div className="auth-benefit-icon">
+                <BookOpen size={18} />
+              </div>
+              <div>
+                <b>Aptitude Tests</b>
+                <p>Timed practice questions with instant solution reviews</p>
+              </div>
+            </div>
+
+            <div className="auth-benefit-item">
+              <div className="auth-benefit-icon">
+                <Flame size={18} />
+              </div>
+              <div>
+                <b>Daily Streak</b>
+                <p>Track your daily consistency with calendar momentum</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="auth-brand-foot">
+          <span>Code. Climb. Crest. &bull; Interview Preparation</span>
+        </div>
+      </aside>
+
+      <main className="auth-card-wrap">
+        <motion.div
+          className="auth-card"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="lg:hidden mb-6 flex justify-center">
+            <Logo />
+          </div>
+          <div className="auth-eyebrow">
+            <span className="auth-eyebrow-line" />
+            <span className="auth-eyebrow-label">{eyebrow}</span>
+          </div>
+          <h1 className="auth-title">{title}</h1>
+          <p className="auth-subtitle">{subtitle}</p>
+
+          {children}
+
+          {footer && <div className="auth-footer-link">{footer}</div>}
+        </motion.div>
+      </main>
+    </div>
+  );
+}
+
 function AuthPage({
   kind,
 }: {
   kind: "login" | "signup" | "forgot" | "reset";
 }) {
-  const [name, setName] = useState(""),
-    [email, setEmail] = useState(""),
-    [password, setPassword] = useState(""),
-    [confirmPassword, setConfirmPassword] = useState(""),
-    [busy, setBusy] = useState(false),
-    [err, setErr] = useState(""),
-    [done, setDone] = useState(false),
-    [resendBusy, setResendBusy] = useState(false),
-    [resendMsg, setResendMsg] = useState("");
+  const { user, authReady } = useStore();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [shake, setShake] = useState(false);
+  const [done, setDone] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendMsg, setResendMsg] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
   const nav = useNavigate();
+
+  // Redirect logged-in users who visit /login or /signup
+  if (authReady && user && !user.guest && (kind === "login" || kind === "signup")) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const guest = () => {
     useStore.getState().continueAsGuest();
     nav("/dashboard");
+  };
+
+  const triggerError = (msg: string) => {
+    setErr(msg);
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
   };
 
   async function handleResend() {
@@ -704,7 +823,7 @@ function AuthPage({
       await resendConfirmationEmail(email);
       setResendMsg("Confirmation email resent! Please check your inbox.");
     } catch (e) {
-      setErr((e as Error).message);
+      triggerError((e as Error).message);
     } finally {
       setResendBusy(false);
     }
@@ -723,14 +842,24 @@ function AuthPage({
       ) {
         setDone(true);
       } else {
-        nav("/dashboard");
+        nav("/dashboard", { replace: true });
       }
     } catch (e) {
-      setErr((e as Error).message || "Something went wrong. Please try again.");
+      triggerError((e as Error).message || "Something went wrong. Please try again.");
     } finally {
       setBusy(false);
     }
   }
+
+  const pwdStrength = getPasswordStrength(password);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+
+  const eyebrow =
+    kind === "signup"
+      ? "FREE TO GET STARTED"
+      : kind === "forgot" || kind === "reset"
+        ? "ACCOUNT RECOVERY"
+        : "YOUR NEXT SESSION AWAITS";
 
   const title =
     kind === "login"
@@ -741,306 +870,330 @@ function AuthPage({
           ? "Set new password"
           : "Reset your password";
 
+  const subtitle =
+    kind === "login"
+      ? "Pick up where you left off."
+      : kind === "signup"
+        ? "Create your account and take the first step."
+        : kind === "reset"
+          ? "Choose a strong new password for your account."
+          : "We’ll email you a link to reset it.";
+
+  const footer = (
+    <>
+      {kind === "login" ? (
+        <>
+          New to CodeCrest? <Link to="/signup">Create an account</Link>
+        </>
+      ) : kind === "signup" ? (
+        <>
+          Already have an account? <Link to="/login">Log in</Link>
+        </>
+      ) : (
+        <>
+          Remember your password? <Link to="/login">Log in</Link>
+        </>
+      )}
+    </>
+  );
+
   return (
-    <div className="auth-page">
-      <aside className="auth-side">
-        <div className="auth-side-shape shape-a" />
-        <div className="auth-side-shape shape-b" />
-        <Logo />
-        <div className="auth-side-content">
-          <div className="eyebrow light-eyebrow">YOUR JOURNEY, YOUR PACE</div>
-          <h1>
-            Progress is built
-            <br />
-            one day at a time.
-          </h1>
-          <p>
-            Find your rhythm, learn the patterns, and get closer to the role you
-            want.
+    <AuthLayout
+      eyebrow={eyebrow}
+      title={title}
+      subtitle={subtitle}
+      footer={footer}
+    >
+      {!isSupabaseConfigured && import.meta.env.DEV && (
+        <div className="dev-banner" role="alert" style={{ marginBottom: 16 }}>
+          <strong>[Dev Notice]</strong> Missing Supabase configuration:{" "}
+          <code>{missingSupabaseKeys.join(", ")}</code>. Account authentication is disabled.
+        </div>
+      )}
+
+      {!isSupabaseConfigured && (
+        <div className="form-error" style={{ marginBottom: 16 }}>
+          <AlertCircle size={16} />
+          Login is temporarily unavailable. You can explore as a guest.
+        </div>
+      )}
+
+      {done ? (
+        <div className="success-panel">
+          <CheckCircle2 size={32} color="var(--success)" />
+          <b style={{ fontSize: 16, marginTop: 8 }}>
+            {kind === "signup"
+              ? "Check your email to confirm your account"
+              : kind === "reset"
+                ? "Password updated successfully!"
+                : "Check your inbox"}
+          </b>
+          <p style={{ color: "var(--muted)", margin: "8px 0 16px", fontSize: 13, lineHeight: 1.5 }}>
+            {kind === "signup"
+              ? `We sent a confirmation link to ${email}. Open it to finish creating your account.`
+              : kind === "reset"
+                ? "Your password has been updated. You can now log in with your new password."
+                : `If an account exists for ${email}, we have sent a reset link.`}
           </p>
-          <div className="auth-quote">
-            <div className="quote-stars">★★★★★</div>
-            <p>
-              “The structure helped me stop jumping between topics and start
-              actually understanding them.”
-            </p>
-            <b>— A fellow climber</b>
-          </div>
-        </div>
-        <small className="auth-side-foot">Code. Climb. Crest.</small>
-      </aside>
-      <main className="auth-main">
-        <div className="auth-mobile-brand">
-          <Logo />
-        </div>
-        <div className="auth-card">
-          {!isSupabaseConfigured && import.meta.env.DEV && (
-            <div className="dev-banner" role="alert">
-              <strong>[Dev Notice]</strong> Missing Supabase configuration:{" "}
-              <code>{missingSupabaseKeys.join(", ")}</code>. Account authentication is disabled.
+
+          {kind === "signup" && (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+              <button
+                type="button"
+                disabled={resendBusy}
+                onClick={() => void handleResend()}
+                className="btn btn-quiet auth-resend-btn"
+              >
+                {resendBusy ? "Resending..." : "Resend confirmation email"}
+              </button>
+              {resendMsg && <div className="auth-resend-notice">{resendMsg}</div>}
             </div>
           )}
 
-          {!isSupabaseConfigured && (
-            <div className="form-error" style={{ marginBottom: 16 }}>
-              <AlertCircle size={16} />
-              Login is temporarily unavailable. You can explore as a guest.
-            </div>
+          <Link className="auth-primary-btn" to="/login" style={{ marginTop: 16, textDecoration: "none" }}>
+            Back to log in
+          </Link>
+        </div>
+      ) : (
+        <form
+          className="auth-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (kind === "signup" && !name.trim()) {
+              triggerError("Please enter your full name.");
+              return;
+            }
+            if (kind !== "reset" && (!email.trim() || !email.includes("@") || !email.includes("."))) {
+              triggerError("Please enter a valid email address.");
+              return;
+            }
+            if (kind !== "forgot" && password.length < 6) {
+              triggerError("Password must be at least 6 characters.");
+              return;
+            }
+            if ((kind === "signup" || kind === "reset") && password !== confirmPassword) {
+              triggerError("Passwords do not match.");
+              return;
+            }
+
+            if (kind === "reset") {
+              void run(() => updatePassword(password));
+            } else if (kind === "login") {
+              void run(() => login(email, password));
+            } else if (kind === "signup") {
+              void run(() => signup(name, email, password));
+            } else {
+              void run(() => resetPassword(email));
+            }
+          }}
+        >
+          {kind === "signup" && (
+            <motion.div
+              className="auth-input-group"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+            >
+              <label htmlFor="auth-name">Full name</label>
+              <div className="auth-input-wrap">
+                <span className="auth-input-icon">
+                  <User size={18} />
+                </span>
+                <input
+                  id="auth-name"
+                  className={`auth-input ${touched.name && !name.trim() ? "has-error" : ""}`}
+                  required
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                  placeholder="e.g. Aanya Sharma"
+                />
+              </div>
+              {touched.name && !name.trim() && (
+                <span className="auth-field-error">Please enter your full name</span>
+              )}
+            </motion.div>
           )}
 
-          <div className="auth-heading">
-            <div className="auth-kicker">
-              {kind === "signup"
-                ? "FREE TO GET STARTED"
-                : kind === "forgot" || kind === "reset"
-                  ? "ACCOUNT RECOVERY"
-                  : "YOUR NEXT SESSION AWAITS"}
-            </div>
-            <h2>
-              {title}
-              <span className="heading-period">.</span>
-            </h2>
-            <p>
-              {kind === "login"
-                ? "Pick up where you left off."
-                : kind === "signup"
-                  ? "Create your account and take the first step."
-                  : kind === "reset"
-                    ? "Choose a strong new password for your account."
-                    : "We’ll email you a link to reset it."}
-            </p>
-          </div>
+          {kind !== "reset" && (
+            <motion.div
+              className="auth-input-group"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: kind === "signup" ? 0.1 : 0.05 }}
+            >
+              <label htmlFor="auth-email">Email address</label>
+              <div className="auth-input-wrap">
+                <span className="auth-input-icon">
+                  <Mail size={18} />
+                </span>
+                <input
+                  id="auth-email"
+                  className={`auth-input ${touched.email && (!email.trim() || !email.includes("@")) ? "has-error" : ""}`}
+                  required
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                  placeholder="you@example.com"
+                />
+              </div>
+              {touched.email && (!email.trim() || !email.includes("@")) && (
+                <span className="auth-field-error">Please enter a valid email address</span>
+              )}
+            </motion.div>
+          )}
 
-          {done ? (
-            <div className="success-panel">
-              <CheckCircle2 size={25} />
-              <b>
-                {kind === "signup"
-                  ? "Check your email to confirm your account"
-                  : kind === "reset"
-                    ? "Password updated successfully!"
-                    : "Check your inbox"}
-              </b>
-              <p>
-                {kind === "signup"
-                  ? "We sent a confirmation link to " + email + ". Open it to finish creating your account."
-                  : kind === "reset"
-                    ? "Your password has been updated. You can now log in with your new password."
-                    : "If an account exists for " + email + ", we have sent a reset link."}
-              </p>
+          {kind !== "forgot" && (
+            <motion.div
+              className="auth-input-group"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: kind === "signup" ? 0.15 : 0.1 }}
+            >
+              <label htmlFor="auth-password">
+                {kind === "reset" ? "New password" : "Password"}
+              </label>
+              <div className="auth-input-wrap">
+                <span className="auth-input-icon">
+                  <Lock size={18} />
+                </span>
+                <input
+                  id="auth-password"
+                  className={`auth-input ${touched.password && password.length < 6 ? "has-error" : ""}`}
+                  required
+                  type={showPassword ? "text" : "password"}
+                  minLength={6}
+                  autoComplete={kind === "signup" || kind === "reset" ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                  placeholder={kind === "signup" || kind === "reset" ? "At least 6 characters" : "Enter your password"}
+                />
+                <button
+                  type="button"
+                  className="auth-eye-btn"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
 
-              {kind === "signup" && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
-                  <button
-                    type="button"
-                    disabled={resendBusy}
-                    onClick={() => void handleResend()}
-                    className="btn btn-quiet auth-resend-btn"
-                  >
-                    {resendBusy ? "Resending..." : "Resend email"}
-                  </button>
-                  {resendMsg && <div className="auth-resend-notice">{resendMsg}</div>}
+              {kind === "signup" && password.length > 0 && (
+                <div>
+                  <div className="pwd-meter">
+                    <span className={`pwd-meter-bar ${pwdStrength === "weak" ? "active-weak" : pwdStrength === "ok" ? "active-ok" : "active-strong"}`} />
+                    <span className={`pwd-meter-bar ${pwdStrength === "ok" ? "active-ok" : pwdStrength === "strong" ? "active-strong" : ""}`} />
+                    <span className={`pwd-meter-bar ${pwdStrength === "strong" ? "active-strong" : ""}`} />
+                  </div>
+                  <div className="pwd-meter-label">
+                    <span>Password strength:</span>
+                    <strong style={{
+                      color: pwdStrength === "weak" ? "var(--danger)" : pwdStrength === "ok" ? "var(--warning)" : "var(--success)"
+                    }}>
+                      {pwdStrength === "weak" ? "Weak" : pwdStrength === "ok" ? "Moderate" : "Strong"}
+                    </strong>
+                  </div>
                 </div>
               )}
 
-              <Link className="btn btn-primary" to="/login" style={{ marginTop: 14 }}>
-                Back to log in
-              </Link>
-            </div>
-          ) : (
-            <>
-              <form
-                className="auth-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (kind === "reset") {
-                    if (password.length < 6) {
-                      setErr("Password must be at least 6 characters.");
-                      return;
-                    }
-                    if (password !== confirmPassword) {
-                      setErr("Passwords do not match.");
-                      return;
-                    }
-                    void run(() => updatePassword(password));
-                  } else if (kind === "login") {
-                    void run(() => login(email, password));
-                  } else if (kind === "signup") {
-                    void run(() => signup(name, email, password));
-                  } else {
-                    void run(() => resetPassword(email));
-                  }
-                }}
-              >
-                {kind === "signup" && (
-                  <label>
-                    Full name
-                    <input
-                      required
-                      autoComplete="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Aanya Sharma"
-                    />
-                  </label>
-                )}
-                {kind !== "reset" && (
-                  <label>
-                    Email address
-                    <input
-                      required
-                      type="email"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                    />
-                  </label>
-                )}
-                {kind !== "forgot" && (
-                  <label>
-                    {kind === "reset" ? "New password" : "Password"}
-                    <input
-                      required
-                      type="password"
-                      minLength={6}
-                      autoComplete={
-                        kind === "signup" || kind === "reset"
-                          ? "new-password"
-                          : "current-password"
-                      }
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder={
-                        kind === "signup" || kind === "reset"
-                          ? "At least 6 characters"
-                          : "Enter your password"
-                      }
-                    />
-                    {kind === "login" && (
-                      <Link className="forgot-link" to="/forgot-password">
-                        Forgot password?
-                      </Link>
-                    )}
-                  </label>
-                )}
-                {kind === "reset" && (
-                  <label>
-                    Confirm new password
-                    <input
-                      required
-                      type="password"
-                      minLength={6}
-                      autoComplete="new-password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter new password"
-                    />
-                  </label>
-                )}
-                {err && (
-                  <div role="alert" className="form-error">
-                    <AlertCircle size={16} />
-                    {err}
-                  </div>
-                )}
-                <button
-                  disabled={busy || !isSupabaseConfigured}
-                  className="btn btn-primary btn-full"
-                  type="submit"
-                >
-                  {busy ? (
-                    <span className="spinner" />
-                  ) : kind === "login" ? (
-                    "Log in"
-                  ) : kind === "signup" ? (
-                    "Create account"
-                  ) : kind === "reset" ? (
-                    "Update password"
-                  ) : (
-                    "Send reset link"
-                  )}
-                  {!busy && <ArrowRight size={16} />}
-                </button>
-              </form>
-              {kind !== "forgot" && kind !== "reset" && (
-                <>
-                  <div className="auth-divider">
-                    <span />
-                    or continue with
-                    <span />
-                  </div>
-                  <button
-                    className="google-btn"
-                    disabled={busy || !isSupabaseConfigured}
-                    onClick={() => void run(googleLogin)}
-                    type="button"
-                  >
-                    <GoogleIcon />
-                    Continue with Google
-                  </button>
-                  <button className="guest-btn" type="button" onClick={guest}>
-                    Continue as a guest <ArrowRight size={15} />
-                  </button>
-                </>
+              {kind === "login" && (
+                <Link className="auth-forgot-link" to="/forgot-password">
+                  Forgot password?
+                </Link>
               )}
-              {!supabaseEnabled && (
-                <p className="auth-hint">
-                  <ShieldCheck size={14} /> Supabase is not configured. Guest mode is available.
-                </p>
-              )}
-              <p className="auth-switch">
-                {kind === "login" ? (
-                  <>
-                    New to CodeCrest?{" "}
-                    <Link to="/signup">Create an account</Link>
-                  </>
-                ) : kind === "signup" ? (
-                  <>
-                    Already have an account? <Link to="/login">Log in</Link>
-                  </>
-                ) : (
-                  <>
-                    Remember your password? <Link to="/login">Log in</Link>
-                  </>
-                )}
-              </p>
-            </>
-          )}
-        </div>
-        <div className="auth-bottom">
-          <span>Secure sign-in</span>
-          <span>·</span>
-          <span>Made for your next step</span>
-        </div>
-      </main>
-    </div>
-  );
-}
 
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-        transform="translate(0 5)"
-      />
-      <path
-        fill="currentColor"
-        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.72 7.18l7.64 5.93c4.46-4.12 7.12-10.19 7.12-17.58z"
-      />
-      <path
-        fill="currentColor"
-        d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a23.93 23.93 0 0 0 0 21.56l7.98-6.19z"
-        transform="translate(0 5)"
-      />
-      <path
-        fill="currentColor"
-        d="M24 48c6.48 0 11.93-2.14 15.9-5.83l-7.64-5.93c-2.12 1.42-4.84 2.26-8.26 2.26-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-        transform="translate(0 -1)"
-      />
-    </svg>
+              {touched.password && password.length < 6 && (
+                <span className="auth-field-error">Password must be at least 6 characters</span>
+              )}
+            </motion.div>
+          )}
+
+          {(kind === "signup" || kind === "reset") && (
+            <motion.div
+              className="auth-input-group"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: kind === "signup" ? 0.2 : 0.15 }}
+            >
+              <label htmlFor="auth-confirm-password">Confirm password</label>
+              <div className="auth-input-wrap">
+                <span className="auth-input-icon">
+                  <Lock size={18} />
+                </span>
+                <input
+                  id="auth-confirm-password"
+                  className={`auth-input ${touched.confirm && confirmPassword.length > 0 && !passwordsMatch ? "has-error" : ""}`}
+                  required
+                  type={showConfirm ? "text" : "password"}
+                  minLength={6}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+                  placeholder="Re-enter password"
+                />
+                <button
+                  type="button"
+                  className="auth-eye-btn"
+                  onClick={() => setShowConfirm((s) => !s)}
+                  aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                >
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {confirmPassword.length > 0 && (
+                <div className={`pwd-match-hint ${passwordsMatch ? "match" : "no-match"}`}>
+                  {passwordsMatch ? (
+                    <>
+                      <Check size={14} /> Passwords match
+                    </>
+                  ) : (
+                    "Passwords do not match yet"
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {err && (
+            <div role="alert" className={`auth-error-alert ${shake ? "auth-shake" : ""}`}>
+              <AlertCircle size={16} />
+              <div>{err}</div>
+            </div>
+          )}
+
+          <button
+            disabled={busy || !isSupabaseConfigured}
+            className="auth-primary-btn"
+            type="submit"
+          >
+            {busy ? (
+              <span className="spinner" />
+            ) : kind === "login" ? (
+              "Log in"
+            ) : kind === "signup" ? (
+              "Create account"
+            ) : kind === "reset" ? (
+              "Update password"
+            ) : (
+              "Send reset link"
+            )}
+            {!busy && <ArrowRight size={16} />}
+          </button>
+
+          {(kind === "login" || kind === "signup") && (
+            <button className="auth-ghost-btn" type="button" onClick={guest}>
+              Continue as a guest <ArrowRight size={15} />
+            </button>
+          )}
+        </form>
+      )}
+    </AuthLayout>
   );
 }
 function Shell({ children }: { children: React.ReactNode }) {
@@ -1707,7 +1860,7 @@ function Dashboard() {
           </div>
           <div className="stat-number">
             {solved.length}
-            <span> / {problems.length}</span>
+            <span style={{ color: "var(--muted)" }}> / {problems.length}</span>
           </div>
           <div className="stat-label">Problems solved</div>
           <div className="stat-track">
@@ -1765,7 +1918,7 @@ function Dashboard() {
           </small>
         </div>
         <a
-          className="btn btn-soft"
+          className="btn btn-primary"
           href={`https://leetcode.com/problems/${potd.leetcodeSlug}/`}
           target="_blank"
           rel="noopener noreferrer"
@@ -1785,12 +1938,12 @@ function Dashboard() {
             </span>
           </div>
           <div className="weekly-chart">
-            {last7.map((d, i) => (
+            {last7.map((d) => (
               <div className="week-column" key={d.key}>
-                <div className="week-bar-bg">
+                <div className="week-bar-bg" title={`${d.val ? 1 : 0} problems`}>
                   <i
-                    className={d.val ? "week-bar-active" : ""}
-                    style={{ height: d.val ? "70%" : `${18 + (i % 3) * 8}%` }}
+                    className={d.val ? "week-bar-active" : "week-bar-empty"}
+                    style={{ height: d.val ? "70%" : "4px" }}
                   />
                 </div>
                 <small>{d.day}</small>

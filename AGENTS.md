@@ -9,7 +9,7 @@
 - **Security**: Only the publishable/anon key (`VITE_SUPABASE_ANON_KEY`) is used in the frontend. **Never expose or reference the Supabase `service_role` key** anywhere in client code.
 
 ### 2. Dual-Mode Architecture (Account vs Guest)
-- **Account Mode**: Enabled when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are present in `.env`. Authenticates via Supabase Email/Password or Google OAuth. Reads and writes sync to Supabase tables via `src/lib/progressService.ts`.
+- **Account Mode**: Enabled when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are present in `.env`. Authenticates via Supabase Email/Password. Reads and writes sync to Supabase tables via `src/lib/progressService.ts`.
 - **Guest Mode**: Used **only** when Supabase environment variables are missing, or when a user explicitly clicks "Continue as a guest". Progress is stored in `localStorage` (`codecrest_guest_progress`).
 - **Never silently fall back to guest mode**: When a login or cloud operation fails, report the error visibly to the user (via toast or inline error) rather than reverting the user to guest mode.
 - **Guest-to-Account Migration**: When a guest later signs up or logs in, CodeCrest checks for existing guest progress and offers a one-click merge into their cloud account using non-destructive upserts (`progressService.mergeGuestDataToCloud`).

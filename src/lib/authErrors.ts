@@ -54,22 +54,6 @@ export function mapAuthError(error: unknown): string {
   }
 
   if (
-    rawMsg.includes("provider is not enabled") ||
-    rawMsg.includes("unsupported provider") ||
-    code === "validation_failed"
-  ) {
-    return "Google sign-in is not enabled in this project's settings yet. Please use email/password or guest mode.";
-  }
-
-  if (
-    rawMsg.includes("popup closed") ||
-    rawMsg.includes("user cancelled") ||
-    rawMsg.includes("cancelled")
-  ) {
-    return "Sign-in was cancelled. Please try again.";
-  }
-
-  if (
     code === "email_address_invalid" ||
     rawMsg.includes("email address") && rawMsg.includes("is invalid")
   ) {

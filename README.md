@@ -15,7 +15,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Add your Supabase project URL and anon/publishable key to `.env` to enable Email/Password, Google sign-in, and cloud progress sync. Without Supabase keys, choose **Continue as a guest**; progress and profile settings will stay saved in this browser's `localStorage`. The project uses Supabase exclusively for backend services (never Firebase).
+Add your Supabase project URL and anon/publishable key to `.env` to enable Email/Password sign-in and cloud progress sync. Without Supabase keys, choose **Continue as a guest**; progress and profile settings will stay saved in this browser's `localStorage`. The project uses Supabase exclusively for backend services (never Firebase).
 
 ## Supabase setup
 
@@ -29,20 +29,19 @@ Follow these steps to configure your Supabase backend:
    ```
    *Note: Only use the anon/publishable key in frontend code. Never use or expose the `service_role` key.*
 
-3. **Run database schema**: Open the **SQL Editor** in your Supabase dashboard, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it. This script creates:
-   - `profiles` table with automatic profile creation trigger on signup.
-   - `problem_progress` table for solved status, bookmarks, and revision notes.
-   - `test_attempts` table for timed MCQ scores and question analytics.
-   - `activity_log` table for local calendar streaks.
-   - Strict Row-Level Security (RLS) policies and performance indexes ensuring users can only read and write their own data.
+3. **Run database schema & migrations**:
+   - Open the **SQL Editor** in your Supabase dashboard, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it.
+   - Run the idempotent migration [`supabase/migrations/002_profiles.sql`](./supabase/migrations/002_profiles.sql) to set up profiles, the `handle_new_user()` security definer trigger, and RLS policies.
+   - These scripts create:
+     - `profiles` table with automatic profile creation trigger on signup.
+     - `problem_progress` table for solved status, bookmarks, and revision notes.
+     - `test_attempts` table for timed MCQ scores and question analytics.
+     - `activity_log` table for local calendar streaks.
+     - Strict Row-Level Security (RLS) policies and performance indexes ensuring users can only read and write their own data.
 
 4. **Configure Authentication Providers**:
    - Go to **Authentication → Providers**.
    - **Email**: Ensure Email is enabled. Decide whether to require email confirmation (**Confirm email** toggle in Supabase). If enabled, users will see a confirmation screen with a "Resend email" option upon registration.
-   - **Google**: To enable Google sign-in:
-     1. Create an OAuth 2.0 Web Application client in Google Cloud Console.
-     2. Add your Supabase callback URL (`https://<your-project-ref>.supabase.co/auth/v1/callback`) to Authorized redirect URIs in Google Cloud.
-     3. Copy the Google Client ID and Client Secret into Supabase **Authentication → Providers → Google**, and enable the provider.
 
 5. **Set Site URL & Redirect URLs**:
    - Under **Authentication → URL Configuration**:

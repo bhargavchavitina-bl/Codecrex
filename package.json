@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run check:data && tsc -b && vite build",
+    "build": "npm run check:contrast && npm run check:data && tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
+    "check:contrast": "tsx scripts/check-contrast.ts",
     "check:slugs": "tsx scripts/check-slugs.ts",
     "verify:mcqs": "tsx scripts/verify-mcqs.ts",
     "check:data": "tsx scripts/check-data.ts",

@@ -1419,7 +1419,7 @@ const more: [string, string, string, string, string, number][] = [
 ];
 const companies = [
   "Amazon",
-  "Google",
+  "Netflix",
   "Microsoft",
   "Meta",
   "Adobe",

@@ -263,7 +263,7 @@ export const useStore = create<State>()(
           }
         } catch (error) {
           console.error("Error hydrating user progress:", error);
-          get().showToast("Failed to load your latest cloud progress.", "error");
+          get().showToast("Could not sync data. Check Supabase RLS policies.", "error");
         }
       },
 
@@ -339,12 +339,16 @@ function logDevAuthError(action: string, error: unknown) {
   }
 }
 
-function setSupabaseSessionUser(user: {
-  id: string;
-  email?: string;
-  user_metadata?: { full_name?: string; name?: string };
-}) {
+function setSupabaseSessionUser(
+  user: {
+    id: string;
+    email?: string;
+    user_metadata?: { full_name?: string; name?: string };
+  },
+  explicitName?: string,
+) {
   const name =
+    explicitName ||
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
     user.email?.split("@")[0] ||
@@ -377,6 +381,34 @@ export async function login(email: string, password: string) {
   }
 
   if (data.user) {
+    // Ensure profile row exists
+    try {
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const displayName =
+          data.user.user_metadata?.full_name ||
+          data.user.user_metadata?.name ||
+          data.user.email?.split("@")[0] ||
+          "Learner";
+        await supabase.from("profiles").upsert(
+          {
+            id: data.user.id,
+            email: data.user.email || "",
+            display_name: displayName,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+      }
+    } catch (err) {
+      console.warn("Could not check/upsert profile on login:", err);
+    }
+
     setSupabaseSessionUser(data.user);
   }
 }
@@ -406,13 +438,55 @@ export async function signup(name: string, email: string, password: string) {
     throw new Error(mapAuthError(error));
   }
 
+  // Duplicate email detection: Supabase returns user with empty identities when email already exists
+  if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+    throw new Error("This email is already registered. Try logging in.");
+  }
+
   // If email confirmation is disabled, session is returned immediately
   if (data.session && data.user) {
-    setSupabaseSessionUser(data.user);
+    // 3a. Ensure profile row exists
+    try {
+      await supabase.from("profiles").upsert(
+        {
+          id: data.user.id,
+          email: trimmedEmail,
+          display_name: trimmedName || "Learner",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+      // 3b. Verify row was written
+      const { error: verifyErr } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (verifyErr) {
+        console.warn("Could not verify profile row write:", verifyErr);
+      }
+    } catch (err) {
+      console.warn("Profile upsert error:", err);
+    }
+
+    // 3c. Merge guest progress if any
+    if (hasPendingGuestData()) {
+      try {
+        await mergeGuestDataToCloud(data.user.id);
+        clearGuestData();
+      } catch (err) {
+        console.warn("Error merging guest data during signup:", err);
+      }
+    }
+
+    setSupabaseSessionUser(data.user, trimmedName);
+    // 3d. Show welcome toast
+    useStore.getState().showToast(`Welcome to CodeCrest, ${trimmedName || "Learner"}!`, "success");
+
     return { needsConfirmation: false };
   }
 
-  // If email confirmation is enabled, session is null
+  // 4. If email confirmation is enabled, session is null
   return { needsConfirmation: true, email: trimmedEmail };
 }
 
@@ -430,23 +504,6 @@ export async function resendConfirmationEmail(email: string) {
 
   if (error) {
     logDevAuthError("resend", error);
-    throw new Error(mapAuthError(error));
-  }
-}
-
-export async function googleLogin() {
-  if (!supabase) {
-    throw new Error("Supabase is not configured. Guest mode is available to explore CodeCrest.");
-  }
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/dashboard`,
-    },
-  });
-
-  if (error) {
-    logDevAuthError("signInWithOAuth", error);
     throw new Error(mapAuthError(error));
   }
 }
