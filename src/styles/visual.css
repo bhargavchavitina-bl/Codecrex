@@ -4,8 +4,10 @@ html {
     background: var(--bg);
 }
 
+html,
+html[data-theme="light"],
 html[data-theme="dark"] {
-    color-scheme: dark;
+    color-scheme: light;
 }
 
 *,

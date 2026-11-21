@@ -29,40 +29,15 @@ const lightTheme: ColorTheme = {
     "success-text": "#1E5E33",
     "success-soft": "#D6EEDD",
     warning: "#A8620A",
+    "warning-text": "#844700",
     "warning-soft": "#F7E7CD",
     danger: "#B3261E",
+    "danger-text": "#A8201A",
     "danger-soft": "#F9D8D6",
   },
 };
 
-const darkTheme: ColorTheme = {
-  name: "Dark Theme (Night Ember)",
-  tokens: {
-    bg: "#15110E",
-    surface: "#1E1813",
-    "surface-2": "#28211A",
-    "surface-3": "#342C23",
-    ink: "#F4EDE2",
-    "ink-2": "#D6C8B4",
-    muted: "#A4937D",
-    border: "#3C3227",
-    accent: "#E06743",
-    "accent-hover": "#E87C5C",
-    "on-accent": "#1E1813",
-    "accent-text": "#F38C6C",
-    "accent-soft": "#38231B",
-    ember: "#F27B35",
-    "on-ember": "#1E1813",
-    success: "#4EAB6D",
-    "on-success": "#0D2013",
-    "success-text": "#6EC88C",
-    "success-soft": "#173320",
-    warning: "#D89438",
-    "warning-soft": "#352512",
-    danger: "#E0534B",
-    "danger-soft": "#3B1B19",
-  },
-};
+
 
 const checkPairs: [string, string][] = [
   ["ink", "bg"],
@@ -78,6 +53,10 @@ const checkPairs: [string, string][] = [
   ["on-success", "success"],
   ["success-text", "success-soft"],
   ["accent-text", "accent-soft"],
+  ["ink-2", "surface-2"],
+  ["muted", "surface-2"],
+  ["warning-text", "warning-soft"],
+  ["danger-text", "danger-soft"],
 ];
 
 function sRGBtoLin(c: number): number {
@@ -106,7 +85,9 @@ console.log("══════════════════════�
 
 let allPassed = true;
 
-for (const theme of [lightTheme, darkTheme]) {
+const themes: ColorTheme[] = [lightTheme];
+
+for (const theme of themes) {
   console.log(`--- ${theme.name.toUpperCase()} ---`);
   console.log("No.  | Foreground   | Background   | FG Hex  | BG Hex  | Ratio   | Status");
   console.log("-----+--------------+--------------+---------+---------+---------+-------");
@@ -140,6 +121,6 @@ if (!allPassed) {
   console.error("FAIL: One or more token pairs failed WCAG AA 4.5:1 contrast requirement!\n");
   process.exit(1);
 } else {
-  console.log("PASS: All 13 token pairs in both themes satisfy WCAG AA contrast (>= 4.5:1)!\n");
+  console.log("PASS: All 17 token pairs satisfy WCAG AA contrast (>= 4.5:1)!\n");
   process.exit(0);
 }

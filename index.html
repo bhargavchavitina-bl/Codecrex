@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,16 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" href="/fonts/sora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
     <script>
-      (() => {
-        try {
-          const saved = JSON.parse(localStorage.getItem("codecrest-guest") || "null")?.state?.dark;
-          document.documentElement.dataset.theme = typeof saved === "boolean"
-            ? (saved ? "dark" : "light")
-            : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        } catch {
-          document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        }
-      })();
+      document.documentElement.dataset.theme = "light";
     </script>
     <title>CodeCrest — Code. Climb. Crest.</title>
   </head>

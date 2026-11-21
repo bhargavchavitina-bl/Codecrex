@@ -88,9 +88,7 @@ export const useStore = create<State>()(
       notes: {},
       activeDays: [],
       attempts: [],
-      dark:
-        typeof window !== "undefined" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches,
+      dark: false,
 
       setUser: (user) => set({ user, authReady: true }),
       setAuthReady: (authReady) => set({ authReady }),
@@ -158,7 +156,7 @@ export const useStore = create<State>()(
         }
       },
 
-      theme: () => set({ dark: !get().dark }),
+      theme: () => set({ dark: false }),
 
       markSession: () => {
         const today = getLocalDateString();
@@ -313,8 +311,13 @@ export const useStore = create<State>()(
     {
       name: "codecrest-preferences",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.dark = false;
+        }
+      },
       partialize: (s) => ({
-        dark: s.dark,
+        dark: false,
         // Only persist user if explicitly guest; authenticated users rely on Supabase session token
         user: s.user?.guest ? s.user : null,
       }),

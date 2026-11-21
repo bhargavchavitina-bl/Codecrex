@@ -31,10 +31,8 @@ import {
   Layers,
   LogOut,
   Menu,
-  Moon,
   Search,
   Star,
-  Sun,
   Trophy,
   User,
   X,
@@ -114,15 +112,15 @@ function Logo() {
   );
 }
 function App() {
-  const { user, dark, authReady } = useStore();
+  const { user, authReady } = useStore();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   useEffect(() => {
     return subscribeAuth();
   }, []);
   useEffect(() => {
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-  }, [dark]);
+    document.documentElement.dataset.theme = "light";
+  }, []);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -1199,8 +1197,6 @@ function AuthPage({
 function Shell({ children }: { children: React.ReactNode }) {
   const {
     user,
-    dark,
-    theme,
     activeDays,
     toast,
     setToast,
@@ -1285,23 +1281,6 @@ function Shell({ children }: { children: React.ReactNode }) {
           >
             <Flame size={18} fill="currentColor" />
             <b><CountUp value={streak} /></b>
-          </button>
-          <button
-            onClick={theme}
-            className="icon-button theme-button"
-            aria-label={dark ? "Use light theme" : "Use dark theme"}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={dark ? "sun" : "moon"}
-                initial={{ opacity: 0, rotate: -35, scale: 0.75 }}
-                animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                exit={{ opacity: 0, rotate: 35, scale: 0.75 }}
-                transition={{ duration: 0.18 }}
-              >
-                {dark ? <Sun size={18} /> : <Moon size={18} />}
-              </motion.span>
-            </AnimatePresence>
           </button>
           <div className="user-menu">
             <Link to="/profile" className="user-profile-link" aria-label="Profile">

@@ -25,8 +25,10 @@ export default {
         successText: 'var(--success-text)',
         successSoft: 'var(--success-soft)',
         warning: 'var(--warning)',
+        warningText: 'var(--warning-text)',
         warningSoft: 'var(--warning-soft)',
         danger: 'var(--danger)',
+        dangerText: 'var(--danger-text)',
         dangerSoft: 'var(--danger-soft)',
       },
       fontFamily: {
