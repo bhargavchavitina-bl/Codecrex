@@ -2188,180 +2188,155 @@ function DsaRoadmap() {
       (t.name.toLowerCase().includes(query.toLowerCase()) ||
         t.description.toLowerCase().includes(query.toLowerCase())),
   );
+
+  const totalSolved = problems.filter((p) => solved.includes(p.id)).length;
+  const totalEasy = problems.filter((p) => p.difficulty === "Easy").length;
+  const solvedEasy = problems.filter((p) => p.difficulty === "Easy" && solved.includes(p.id)).length;
+  const totalMedium = problems.filter((p) => p.difficulty === "Medium").length;
+  const solvedMedium = problems.filter((p) => p.difficulty === "Medium" && solved.includes(p.id)).length;
+  const totalHard = problems.filter((p) => p.difficulty === "Hard").length;
+  const solvedHard = problems.filter((p) => p.difficulty === "Hard" && solved.includes(p.id)).length;
+  const percent = problems.length ? Math.round((totalSolved / problems.length) * 100) : 0;
+
   return (
-    <div className="content-wrap roadmap-layout">
-      <aside className="topic-sidebar">
-        <div className="topic-side-head">
-          <b>DSA ROADMAP</b>
-          <span>{topics.length} topics</span>
+    <div className="content-wrap roadmap-container">
+      <PageHead
+        eyebrow="THE ROADMAP"
+        title="DSA, one pattern at a time."
+        description="A thoughtful path through the patterns that show up in interviews."
+        action={
+          <span className="roadmap-count">
+            <Code2 size={16} />
+            {totalSolved} of {problems.length} complete
+          </span>
+        }
+      />
+      <div className="overall-card">
+        <div className="overall-copy">
+          <div>
+            <span className="eyebrow">YOUR OVERALL PROGRESS</span>
+            <h2>
+              {totalSolved}
+              <small> / {problems.length}</small> <span>problems solved</span>
+            </h2>
+          </div>
+          <ProgressRing value={percent} size={62} />
         </div>
-        <div className="topic-side-links">
-          {topics.map((t, i) => {
-            const all = problems.filter((p) => problemMatchesTopic(p, t.id)),
-              n = all.filter((p) => solved.includes(p.id)).length;
-            return (
-              <Link key={t.id} to={`/dsa/${t.id}`} className="topic-side-link">
-                <ProgressRing
-                  value={all.length ? Math.round((n / all.length) * 100) : 0}
-                  size={30}
-                />
-                <span>
-                  {String(i + 1).padStart(2, "0")} {t.name}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="overall-track">
+          <i style={{ width: `${percent}%` }} />
         </div>
-      </aside>
-      <div className="roadmap-main">
-        <PageHead
-          eyebrow="THE ROADMAP"
-          title="DSA, one pattern at a time."
-          description="A thoughtful path through the patterns that show up in interviews."
-          action={
-            <span className="roadmap-count">
-              <Code2 size={16} />
-              {solved.length} of {problems.length} complete
+        <div className="overall-foot">
+          <span>Keep showing up. It adds up.</span>
+          <div className="diff-breakdown">
+            <span>
+              <i className="dot-easy" />
+              Easy {solvedEasy}/{totalEasy}
             </span>
-          }
-        />
-        <div className="overall-card">
-          <div className="overall-copy">
-            <div>
-              <span className="eyebrow">YOUR OVERALL PROGRESS</span>
-              <h2>
-                {solved.length}
-                <small> / {problems.length}</small> <span>problems solved</span>
-              </h2>
-            </div>
-            <ProgressRing
-              value={Math.round((solved.length / problems.length) * 100)}
-              size={62}
-            />
-          </div>
-          <div className="overall-track">
-            <i
-              style={{ width: `${(solved.length / problems.length) * 100}%` }}
-            />
-          </div>
-          <div className="overall-foot">
-            <span>Keep showing up. It adds up.</span>
-            <div className="diff-breakdown">
-              <span>
-                <i className="dot-easy" />
-                {
-                  problems.filter(
-                    (p) => p.difficulty === "Easy" && solved.includes(p.id),
-                  ).length
-                }{" "}
-                Easy
-              </span>
-              <span>
-                <i className="dot-medium" />
-                {
-                  problems.filter(
-                    (p) => p.difficulty === "Medium" && solved.includes(p.id),
-                  ).length
-                }{" "}
-                Medium
-              </span>
-              <span>
-                <i className="dot-hard" />
-                {
-                  problems.filter(
-                    (p) => p.difficulty === "Hard" && solved.includes(p.id),
-                  ).length
-                }{" "}
-                Hard
-              </span>
-            </div>
+            <span>
+              <i className="dot-medium" />
+              Medium {solvedMedium}/{totalMedium}
+            </span>
+            <span>
+              <i className="dot-hard" />
+              Hard {solvedHard}/{totalHard}
+            </span>
           </div>
         </div>
-        <div className="roadmap-toolbar">
-          <div className="search-field">
-            <Search size={16} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Find a topic..."
-            />
-          </div>
-          <div className="filter-pills">
-            {groups.map((g) => (
-              <button
-                key={g}
-                className={group === g ? "selected" : ""}
-                onClick={() => setGroup(g)}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
+      </div>
+      <div className="roadmap-toolbar">
+        <div className="search-field">
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Find a topic..."
+          />
         </div>
-        <div className="topic-grid">
-          {filtered.map((t, i) => {
-            const ps = problems.filter((p) => problemMatchesTopic(p, t.id)),
-              n = ps.filter((p) => solved.includes(p.id)).length,
-              diff = ["Easy", "Medium", "Hard"].map(
-                (d) => ps.filter((p) => p.difficulty === d).length,
-              );
-            return (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, y: reduceMotion ? 0 : 9 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduceMotion ? 0 : Math.min(i, 8) * 0.06, duration: reduceMotion ? 0.12 : 0.3, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <Link to={`/dsa/${t.id}`} className="topic-card">
-                  <div className="topic-card-top">
-                    <span className="topic-index">
-                      {String(topics.indexOf(t) + 1).padStart(2, "0")}
-                    </span>
-                    <ProgressRing
-                      value={ps.length ? Math.round((n / ps.length) * 100) : 0}
+        <div className="filter-pills">
+          {groups.map((g) => (
+            <button
+              key={g}
+              className={group === g ? "selected" : ""}
+              onClick={() => setGroup(g)}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="topic-grid topic-grid-redesign">
+        {filtered.map((t, i) => {
+          const ps = problems.filter((p) => problemMatchesTopic(p, t.id)),
+            n = ps.filter((p) => solved.includes(p.id)).length,
+            diff = ["Easy", "Medium", "Hard"].map(
+              (d) => ps.filter((p) => p.difficulty === d).length,
+            );
+          return (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: reduceMotion ? 0 : 9 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: reduceMotion ? 0 : Math.min(i, 8) * 0.06,
+                duration: reduceMotion ? 0.12 : 0.3,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Link to={`/dsa/${t.id}`} className="topic-card">
+                <div className="topic-card-top">
+                  <span className="topic-index">
+                    {String(topics.indexOf(t) + 1).padStart(2, "0")}
+                  </span>
+                  <ProgressRing
+                    value={ps.length ? Math.round((n / ps.length) * 100) : 0}
+                  />
+                </div>
+                <h3>{t.name}</h3>
+                <p>{t.description}</p>
+                <div className="topic-progress-line">
+                  <div className="progress-track">
+                    <i
+                      style={{
+                        width: `${ps.length ? (n / ps.length) * 100 : 0}%`,
+                      }}
                     />
                   </div>
-                  <h3>{t.name}</h3>
-                  <p>{t.description}</p>
-                  <div className="topic-progress-line">
-                    <div className="progress-track">
-                      <i
-                        style={{
-                          width: `${ps.length ? (n / ps.length) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
+                  <span>
+                    {n}/{ps.length}
+                  </span>
+                </div>
+                <div className="topic-card-bottom">
+                  <div className="topic-diff">
                     <span>
-                      {n}/{ps.length}
+                      <i className="dot-easy" />
+                      {diff[0]}
+                    </span>
+                    <span>
+                      <i className="dot-medium" />
+                      {diff[1]}
+                    </span>
+                    <span>
+                      <i className="dot-hard" />
+                      {diff[2]}
                     </span>
                   </div>
-                  <div className="topic-card-bottom">
-                    <div className="topic-diff">
-                      <span>
-                        <i className="dot-easy" />
-                        {diff[0]}
-                      </span>
-                      <span>
-                        <i className="dot-medium" />
-                        {diff[1]}
-                      </span>
-                      <span>
-                        <i className="dot-hard" />
-                        {diff[2]}
-                      </span>
-                    </div>
-                    <ChevronRight size={16} />
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <ChevronRight size={16} />
+                </div>
+              </Link>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
 }
 const filters = ["All", "Easy", "Medium", "Hard"];
+const difficultyRank: Record<string, number> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+};
+
 function TopicPage() {
   const { topicId } = useParams(),
     topic = topics.find((t) => t.id.toLowerCase() === topicId?.toLowerCase());
@@ -2372,18 +2347,60 @@ function TopicPage() {
     [status, setStatus] = useState("All problems"),
     [company, setCompany] = useState("All companies"),
     [pattern, setPattern] = useState("All patterns"),
+    [mustDoOnly, setMustDoOnly] = useState(false),
     [sort, setSort] = useState(true),
     [open, setOpen] = useState<string[]>([]),
-    [noteOpen, setNoteOpen] = useState<string | null>(null);
+    [noteOpen, setNoteOpen] = useState<string | null>(null),
+    [activePattern, setActivePattern] = useState<string>("");
+
   if (!topic) return <NotFound />;
+
+  const topicIndex = topics.findIndex((t) => t.id.toLowerCase() === topic.id.toLowerCase());
+  const prevTopic = topicIndex > 0 ? topics[topicIndex - 1] : null;
+  const nextTopic = topicIndex < topics.length - 1 ? topics[topicIndex + 1] : null;
+
   const all = problems.filter((p) => problemMatchesTopic(p, topic.id));
   if (import.meta.env.DEV && all.length === 0) {
     console.warn(`[DEV WARNING] Topic "${topic.name}" (${topic.id}) has 0 problems.`);
   }
+
+  // Set initial active pattern
+  useEffect(() => {
+    if (topic && topic.patterns.length > 0) {
+      setActivePattern(topic.patterns[0].name);
+    }
+  }, [topic]);
+
+  // Scroll spy to highlight active pill
+  useEffect(() => {
+    const handleScroll = () => {
+      const patternEls = topic.patterns
+        .map((p) => {
+          const id = `section-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+          const el = document.getElementById(id);
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          return { name: p.name, top: rect.top };
+        })
+        .filter(Boolean) as { name: string; top: number }[];
+
+      if (patternEls.length === 0) return;
+      const current =
+        patternEls.filter((p) => p.top <= 200).pop() || patternEls[0];
+      if (current) {
+        setActivePattern(current.name);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [topic]);
+
   const availablePatterns = [
     ...new Set(all.map((p) => getProblemPatternForTopic(p, topic.id))),
   ];
   const companies = [...new Set(all.flatMap((p) => p.companies))].sort();
+
   const passing = all
     .filter(
       (p) =>
@@ -2396,6 +2413,7 @@ function TopicPage() {
               : status === "Bookmarked"
                 ? bookmarks.includes(p.id)
                 : revisit.includes(p.id))) &&
+        (!mustDoOnly || p.importance === 3) &&
         (company === "All companies" || p.companies.includes(company)) &&
         (pattern === "All patterns" ||
           getProblemPatternForTopic(p, topic.id) === pattern) &&
@@ -2406,24 +2424,46 @@ function TopicPage() {
           getProblemPatternForTopic(p, topic.id)
             .toLowerCase()
             .includes(query.toLowerCase())),
-    )
-    .sort((a, b) =>
-      sort ? b.importance - a.importance : a.title.localeCompare(b.title),
     );
 
   const definedPatternNames = new Set(topic.patterns.map((item) => item.name));
-  const definedGroups = topic.patterns.map((item) => ({
-    name: item.name,
-    tip: item.tip,
-    items: passing.filter(
+  const definedGroups = topic.patterns.map((item) => {
+    const patternProblems = passing.filter(
       (problem) =>
         getProblemPatternForTopic(problem, topic.id) === item.name,
-    ),
-  }));
-  const otherProblems = passing.filter(
-    (problem) =>
-      !definedPatternNames.has(getProblemPatternForTopic(problem, topic.id)),
-  );
+    );
+    patternProblems.sort((a, b) => {
+      if (sort) {
+        const diffA = difficultyRank[a.difficulty] || 2;
+        const diffB = difficultyRank[b.difficulty] || 2;
+        if (diffA !== diffB) return diffA - diffB;
+        return b.importance - a.importance;
+      }
+      return a.title.localeCompare(b.title);
+    });
+
+    return {
+      name: item.name,
+      tip: item.tip,
+      items: patternProblems,
+    };
+  });
+
+  const otherProblems = passing
+    .filter(
+      (problem) =>
+        !definedPatternNames.has(getProblemPatternForTopic(problem, topic.id)),
+    )
+    .sort((a, b) => {
+      if (sort) {
+        const diffA = difficultyRank[a.difficulty] || 2;
+        const diffB = difficultyRank[b.difficulty] || 2;
+        if (diffA !== diffB) return diffA - diffB;
+        return b.importance - a.importance;
+      }
+      return a.title.localeCompare(b.title);
+    });
+
   const otherGroup =
     otherProblems.length > 0
       ? [
@@ -2437,16 +2477,18 @@ function TopicPage() {
   const byPattern = [...definedGroups, ...otherGroup].filter(
     (group) => group.items.length > 0,
   );
+
   function solvedToggle(id: string) {
     toggle("solved", id);
     if (!solved.includes(id)) markSession();
     void saveProgress().catch(console.error);
   }
   const continueP = all.find((p) => !solved.includes(p.id));
+
   return (
     <div className="content-wrap topic-page">
       <div className="breadcrumb">
-        <Link to="/dsa">DSA Roadmap</Link>
+        <Link to="/dsa">DSA roadmap</Link>
         <ChevronRight size={14} />
         <span>{topic.name}</span>
       </div>
@@ -2503,13 +2545,43 @@ function TopicPage() {
           ))}
         </div>
       </div>
+
+      {/* Sticky pill bar listing topic's subsections */}
+      <div className="subsection-pill-bar">
+        {topic.patterns.map((p) => {
+          const patProblems = all.filter(
+            (x) => getProblemPatternForTopic(x, topic.id) === p.name,
+          );
+          const patSolved = patProblems.filter((x) => solved.includes(x.id)).length;
+          const patId = `section-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+          return (
+            <button
+              key={p.name}
+              className={`subsection-pill ${activePattern === p.name ? "active" : ""}`}
+              onClick={() => {
+                setActivePattern(p.name);
+                const el = document.getElementById(patId);
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+            >
+              <span>{p.name}</span>
+              <span className="subsection-pill-count">
+                {patSolved}/{patProblems.length}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="topic-filters">
         <div className="search-field">
           <Search size={15} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search problems, companies..."
+            placeholder="Search problems..."
           />
         </div>
         <select
@@ -2538,16 +2610,27 @@ function TopicPage() {
             <option key={f}>{f}</option>
           ))}
         </select>
-        <select
-          aria-label="Filter by company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
+        <button
+          type="button"
+          className={`must-do-toggle ${mustDoOnly ? "active" : ""}`}
+          onClick={() => setMustDoOnly(!mustDoOnly)}
+          aria-pressed={mustDoOnly}
         >
-          <option>All companies</option>
-          {companies.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
+          <Star size={14} fill={mustDoOnly ? "currentColor" : "none"} />
+          <span>Must-do only</span>
+        </button>
+        {companies.length > 0 && (
+          <select
+            aria-label="Filter by company"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+          >
+            <option>All companies</option>
+            {companies.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        )}
         <select
           aria-label="Filter by pattern"
           value={pattern}
@@ -2560,9 +2643,10 @@ function TopicPage() {
         </select>
         <button className="sort-button" onClick={() => setSort((x) => !x)}>
           <ArrowDownWideNarrow size={15} />
-          {sort ? "Importance" : "Title"}
+          {sort ? "Difficulty" : "Title"}
         </button>
       </div>
+
       {all.length === 0 ? (
         <div className="empty-state card">
           <div className="empty-icon">
@@ -2586,6 +2670,7 @@ function TopicPage() {
               setStatus("All problems");
               setCompany("All companies");
               setPattern("All patterns");
+              setMustDoOnly(false);
             }}
           >
             Clear filters
@@ -2603,8 +2688,14 @@ function TopicPage() {
                   solved.includes(x.id),
               ).length,
               isOpen = open.length === 0 || open.includes(p.name);
+            const patSectionId = `section-${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
             return (
-              <motion.section className="pattern-card" key={p.name} layout>
+              <motion.section
+                id={patSectionId}
+                className="pattern-card"
+                key={p.name}
+                layout
+              >
                 <button
                   className="pattern-heading"
                   onClick={() =>
@@ -2616,7 +2707,7 @@ function TopicPage() {
                   }
                   aria-expanded={isOpen}
                 >
-                  <span className="pattern-num">0{pi + 1}</span>
+                  <span className="pattern-num">{String(pi + 1).padStart(2, "0")}</span>
                   <span className="pattern-name">
                     <b>{p.name}</b>
                     <small>{p.tip}</small>
@@ -2639,43 +2730,43 @@ function TopicPage() {
                 </button>
                 <AnimatePresence initial={false}>
                   {isOpen && (
-                  <motion.div
-                    className="problem-list"
-                    key="problem-list"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    {p.items.map((pr, rowIndex) => (
-                      <ProblemRow
-                        key={pr.id}
-                        index={rowIndex}
-                        problem={pr}
-                        solved={solved.includes(pr.id)}
-                        bookmarked={bookmarks.includes(pr.id)}
-                        revisit={revisit.includes(pr.id)}
-                        note={notes[pr.id] || ""}
-                        noteOpen={noteOpen === pr.id}
-                        onSolved={() => solvedToggle(pr.id)}
-                        onBookmark={() => {
-                          toggle("bookmarks", pr.id);
-                          void saveProgress().catch(console.error);
-                        }}
-                        onRevisit={() => {
-                          toggle("revisit", pr.id);
-                          void saveProgress().catch(console.error);
-                        }}
-                        onNote={() =>
-                          setNoteOpen(noteOpen === pr.id ? null : pr.id)
-                        }
-                        onNoteChange={(v) => {
-                          note(pr.id, v);
-                          void saveProgress().catch(console.error);
-                        }}
-                      />
-                    ))}
-                  </motion.div>
+                    <motion.div
+                      className="problem-list"
+                      key="problem-list"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      {p.items.map((pr, rowIndex) => (
+                        <ProblemRow
+                          key={pr.id}
+                          index={rowIndex}
+                          problem={pr}
+                          solved={solved.includes(pr.id)}
+                          bookmarked={bookmarks.includes(pr.id)}
+                          revisit={revisit.includes(pr.id)}
+                          note={notes[pr.id] || ""}
+                          noteOpen={noteOpen === pr.id}
+                          onSolved={() => solvedToggle(pr.id)}
+                          onBookmark={() => {
+                            toggle("bookmarks", pr.id);
+                            void saveProgress().catch(console.error);
+                          }}
+                          onRevisit={() => {
+                            toggle("revisit", pr.id);
+                            void saveProgress().catch(console.error);
+                          }}
+                          onNote={() =>
+                            setNoteOpen(noteOpen === pr.id ? null : pr.id)
+                          }
+                          onNoteChange={(v) => {
+                            note(pr.id, v);
+                            void saveProgress().catch(console.error);
+                          }}
+                        />
+                      ))}
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </motion.section>
@@ -2683,6 +2774,32 @@ function TopicPage() {
           })}
         </div>
       )}
+
+      {/* Bottom topic navigation */}
+      <div className="topic-nav-footer">
+        {prevTopic ? (
+          <Link to={`/dsa/${prevTopic.id}`} className="topic-nav-btn prev">
+            <ArrowLeft size={16} />
+            <div>
+              <small>Previous topic</small>
+              <span>{prevTopic.name}</span>
+            </div>
+          </Link>
+        ) : (
+          <div />
+        )}
+        {nextTopic ? (
+          <Link to={`/dsa/${nextTopic.id}`} className="topic-nav-btn next">
+            <div>
+              <small>Next topic</small>
+              <span>{nextTopic.name}</span>
+            </div>
+            <ArrowRight size={16} />
+          </Link>
+        ) : (
+          <div />
+        )}
+      </div>
     </div>
   );
 }
@@ -2742,11 +2859,19 @@ function ProblemRow({
             {p.title}
             <ExternalLink size={12} />
           </a>
-          <div className="company-chips">
-            {p.companies.map((c) => (
-              <span key={c}>{c}</span>
-            ))}
-          </div>
+          {p.importance === 3 && (
+            <span className="must-do-badge" title="Must-do problem">
+              <Star size={11} fill="currentColor" />
+              Must-do
+            </span>
+          )}
+          {p.companies && p.companies.length > 0 && (
+            <div className="company-chips">
+              {p.companies.map((c) => (
+                <span key={c}>{c}</span>
+              ))}
+            </div>
+          )}
         </div>
         <span className={"difficulty " + p.difficulty.toLowerCase()}>
           {p.difficulty}

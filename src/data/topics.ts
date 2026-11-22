@@ -11,24 +11,19 @@ const groups: [string, string, string, string[]][] = [
     "arrays",
     "Arrays",
     "Start with the fundamentals",
-    ["Traversal & In-place", "Kadane & Subarrays", "Two-dimensional Arrays"],
+    ["Two Pointers", "Sliding Window", "Kadane's", "Prefix Sum"],
   ],
   [
     "strings",
     "Strings",
     "Transform, compare and parse strings",
-    [
-      "Fundamentals",
-      "Expand around center / substrings",
-    ],
+    ["Two Pointers", "Sliding Window"],
   ],
   [
     "hashing",
     "Hashing",
     "Trade space for near-constant lookup",
-    [
-      "Frequency map & complement lookup",
-    ],
+    ["Frequency map & complement lookup"],
   ],
   [
     "two-pointers",
@@ -151,29 +146,97 @@ const groups: [string, string, string, string[]][] = [
   ],
 ];
 
-const patternOverrides: Record<string, string[]> = {
-  strings: [
-    "Fundamentals",
-    "Expand around center / substrings",
-  ],
-  hashing: [
-    "Frequency map & complement lookup",
-  ],
-};
-
 const tips: Record<string, string> = {
-  "Traversal & In-place": "Single pass, track running state (max, min, count).",
-  "Kadane & Subarrays": "Track current max ending here and global max.",
-  "Two-dimensional Arrays": "Traverse grids, boundary simulations, or 2D coordinates.",
-  "Two Pointers": "Sorted input, pairs/triplets, or opposite-end traversal.",
-  "Sliding Window": "Look for longest, shortest, fixed size k, or at most K.",
-  "Prefix Sum": "Range sums, subarray sums, or repeated prefix-based queries.",
-  Fundamentals:
-    "Use character counts and two-pointer scans to compare strings.",
-  "Expand around center / substrings":
-    "For palindromes, try each possible center.",
+  "Two Pointers":
+    "Sorted arrays, pairs/triplets, in-place rewrites, opposite-end traversal.",
+  "Sliding Window":
+    "Contiguous subarray with a fixed size k or a condition (longest, shortest, at most K).",
+  "Kadane's":
+    "Best contiguous subarray sum/product: at each index decide to extend or restart.",
+  "Prefix Sum":
+    "Range-sum and subarray-sum queries; pair with a hash map to count subarrays.",
   "Frequency map & complement lookup":
     "Need O(1) “have I seen this?” lookups or counts.",
+  "Opposite Ends": "Move inward from both sides until conditions meet.",
+  "Fast & Slow": "Detect cycles or find midpoints with unequal speeds.",
+  "Same Direction": "Filter, compress, or rewrite an array in place.",
+  "Fixed Window": "Track running metrics over a window of length k.",
+  "Variable Window": "Expand right until invalid, then shrink left to restore.",
+  "Monotonic Window": "Maintain an ordered queue of window extrema.",
+  "Running Sum": "Precompute cumulative totals to answer range queries in O(1).",
+  "Range Queries": "Calculate subarray sums using prefix difference.",
+  "Prefix + Hashing":
+    "Pair running prefix sums with a hash map to count subarrays.",
+  "Classic Search":
+    "Eliminate half the candidates each step in sorted collections.",
+  "Search on Answer": "Binary search the monotonic solution space.",
+  "Rotated Arrays": "Determine which half is sorted, then narrow.",
+  "Custom Ordering": "Define custom comparators to reveal structure.",
+  "Counting & Bucketing": "Sort in linear time when values have limited range.",
+  Intervals: "Sort start/end points to detect overlap.",
+  "Subsets & Combinations": "Choose, explore, unchoose.",
+  Permutations: "Explore all orderings by swapping or marking visited.",
+  "Constraint Search": "Prune branches that cannot lead to a valid answer.",
+  Reversal: "Track prev, curr, next to reverse pointers in-place.",
+  "Merge & Intersections": "Splice lists together or align head offsets.",
+  "Monotonic Stack":
+    "Maintain monotonic order to find next greater/smaller elements.",
+  "Parsing & Matching":
+    "Match opening/closing tokens or evaluate expressions.",
+  "Min Stack": "Track secondary state alongside each element.",
+  "BFS Queue": "Level-order traversal and shortest unweighted paths.",
+  "Monotonic Deque": "Maintain sliding window maximum or minimum.",
+  Design: "Implement custom data structures with amortized O(1) ops.",
+  "Top K": "Keep k elements in a heap to find top candidates in O(n log k).",
+  "Two Heaps":
+    "Balance a max-heap and min-heap to track medians dynamically.",
+  "K-way Merge": "Merge multiple sorted lists using a heap of head elements.",
+  "DFS Traversals": "Pre-order, in-order, post-order recursive tree walks.",
+  "Level Order": "Queue-based breadth-first tree exploration by depth.",
+  "Tree Construction": "Rebuild trees from traversal orders.",
+  "Search & Validate": "Use left < root < right invariant to search in O(h).",
+  "Successor & Predecessor": "Locate in-order neighbors.",
+  "Balanced Operations":
+    "Maintain height balance for predictable logarithmic depth.",
+  "BFS / DFS": "Explore connected components and paths.",
+  "Shortest Path": "Dijkstra and BFS for minimum cost paths.",
+  "Topological Sort":
+    "Order directed acyclic graph dependencies using in-degrees.",
+  "Union Find & MST":
+    "Disjoint-set forests to track connected components and cycles.",
+  Scheduling: "Prioritize shortest, earliest, or highest value tasks.",
+  "Choice & Exchange":
+    "Make locally optimal decisions that guarantee global optimality.",
+  "1D & 2D": "Define base cases and step transitions.",
+  "Subsequences & LIS":
+    "Formulate recurrence on prefixes and previous matches.",
+  "Knapsack & Partition":
+    "Decide whether to include each item given bounded capacity.",
+  "Strings & Grids": "Compare characters or move along grid coordinates.",
+  "Prefix Search": "Store characters along edges for fast prefix matching.",
+  "Word Dictionary":
+    "Support wildcard search through backtracking over trie branches.",
+  "Bitwise Trie": "Insert binary numbers to find maximum XOR pairs.",
+  "XOR Patterns": "Use x ^ x = 0 to isolate unique values.",
+  "Masks & Subsets": "Enumerate subsets using bit shifts 1 << i.",
+  "Bit Counting": "Clear least significant bit with n & (n - 1).",
+  "GCD & Primes": "Euclidean algorithm and Sieve of Eratosthenes.",
+  Combinatorics:
+    "Counting principles, permutations, combinations, and matrix geometry.",
+  "Modular Arithmetic":
+    "Avoid overflow by reducing intermediate values modulo m.",
+  "Merge & Insert":
+    "Sort intervals by start time and combine overlapping ones.",
+  "Sweep Line": "Process start and end boundary events chronologically.",
+  "Meeting Rooms":
+    "Track concurrent resource usage with heaps or point sorting.",
+};
+
+const stringTips: Record<string, string> = {
+  "Two Pointers":
+    "Palindromes, reversals, in-place edits, comparing/merging strings, expanding around a center.",
+  "Sliding Window":
+    "Substring problems: longest/shortest with a condition, anagram/permutation matching, character counts.",
 };
 
 export const topics: Topic[] = groups.map(
@@ -204,15 +267,17 @@ export const topics: Topic[] = groups.map(
         ? "Data structures"
         : "Problem solving",
     description,
-    patterns: (patternOverrides[id] || patterns).map((p, i) => ({
+    patterns: patterns.map((p, i) => ({
       name: p,
       tip:
-        tips[p] ||
-        [
-          `Look for ${p.toLowerCase()} clues in the constraints and input shape.`,
-          `Track the invariant that stays true after each move.`,
-          `Ask whether extra state can make each decision constant time.`,
-        ][i % 3],
+        id === "strings" && stringTips[p]
+          ? stringTips[p]
+          : tips[p] ||
+            [
+              `Look for ${p.toLowerCase()} clues in the constraints and input shape.`,
+              `Track the invariant that stays true after each move.`,
+              `Ask whether extra state can make each decision constant time.`,
+            ][i % 3],
       problems: [],
     })),
   }),

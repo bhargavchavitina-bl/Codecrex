@@ -1625,3 +1625,186 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==============================================================================
+   DSA ROADMAP & SUBSECTIONS REDESIGN
+   ============================================================================== */
+.roadmap-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.topic-grid-redesign {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .topic-grid-redesign {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .topic-grid-redesign {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.topic-grid-redesign .topic-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-grid-redesign .topic-card-bottom {
+  margin-top: auto;
+}
+
+/* Sticky Subsection Pill Bar */
+.subsection-pill-bar {
+  position: sticky;
+  top: 74px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 4px;
+  margin: 16px 0 24px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  scrollbar-width: none;
+}
+.subsection-pill-bar::-webkit-scrollbar {
+  display: none;
+}
+.subsection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all var(--dur-fast);
+  cursor: pointer;
+}
+.subsection-pill:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+.subsection-pill.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.subsection-pill-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.subsection-pill.active .subsection-pill-count {
+  background: color-mix(in srgb, var(--on-accent) 20%, transparent);
+  color: var(--on-accent);
+}
+
+.pattern-card {
+  scroll-margin-top: 140px;
+}
+
+/* Must-do star badge and filter toggle */
+.must-do-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--warning-soft);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.must-do-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+.must-do-toggle:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.must-do-toggle.active {
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning-text) 30%, transparent);
+  color: var(--warning-text);
+  font-weight: 600;
+}
+
+/* Topic Bottom Navigation */
+.topic-nav-footer {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.topic-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  transition: all var(--dur-fast);
+  min-width: 200px;
+  max-width: 340px;
+}
+.topic-nav-btn:hover {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  transform: translateY(-1px);
+}
+.topic-nav-btn small {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.topic-nav-btn span {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+}
+.topic-nav-btn.next {
+  margin-left: auto;
+  text-align: right;
+}
+
