@@ -55,6 +55,7 @@ type State = {
   activeDays: string[];
   attempts: Attempt[];
   dark: boolean;
+  celebrationsEnabled: boolean;
 
   // Actions
   setUser: (user: UserInfo | null) => void;
@@ -66,6 +67,8 @@ type State = {
   toggle: (key: ProgressKey, id: string) => void;
   note: (id: string, value: string) => void;
   theme: () => void;
+  setCelebrationsEnabled: (enabled: boolean) => void;
+  toggleCelebrations: () => void;
   markSession: () => void;
   recordAttempt: (attempt: Omit<Attempt, "id" | "date">) => void;
   updateProfile: (updates: { name?: string; college?: string; target?: string }) => void;
@@ -88,7 +91,10 @@ export const useStore = create<State>()(
       notes: {},
       activeDays: [],
       attempts: [],
-      dark: false,
+      dark:
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches,
+      celebrationsEnabled: true,
 
       setUser: (user) => set({ user, authReady: true }),
       setAuthReady: (authReady) => set({ authReady }),
@@ -156,7 +162,13 @@ export const useStore = create<State>()(
         }
       },
 
-      theme: () => set({ dark: false }),
+      theme: () => set({ dark: !get().dark }),
+
+      setCelebrationsEnabled: (celebrationsEnabled: boolean) =>
+        set({ celebrationsEnabled }),
+
+      toggleCelebrations: () =>
+        set({ celebrationsEnabled: !get().celebrationsEnabled }),
 
       markSession: () => {
         const today = getLocalDateString();
@@ -311,13 +323,9 @@ export const useStore = create<State>()(
     {
       name: "codecrest-preferences",
       storage: createJSONStorage(() => localStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.dark = false;
-        }
-      },
       partialize: (s) => ({
-        dark: false,
+        dark: s.dark,
+        celebrationsEnabled: s.celebrationsEnabled,
         // Only persist user if explicitly guest; authenticated users rely on Supabase session token
         user: s.user?.guest ? s.user : null,
       }),

@@ -132,18 +132,6 @@ const groups: [string, string, string, string[]][] = [
     "Work directly with binary representation",
     ["XOR Patterns", "Masks & Subsets", "Bit Counting"],
   ],
-  [
-    "math",
-    "Math & Number Theory",
-    "Use number properties to simplify",
-    ["GCD & Primes", "Combinatorics", "Modular Arithmetic"],
-  ],
-  [
-    "intervals",
-    "Intervals",
-    "Sort boundaries, then merge or schedule",
-    ["Merge & Insert", "Sweep Line", "Meeting Rooms"],
-  ],
 ];
 
 const tips: Record<string, string> = {
@@ -220,16 +208,6 @@ const tips: Record<string, string> = {
   "XOR Patterns": "Use x ^ x = 0 to isolate unique values.",
   "Masks & Subsets": "Enumerate subsets using bit shifts 1 << i.",
   "Bit Counting": "Clear least significant bit with n & (n - 1).",
-  "GCD & Primes": "Euclidean algorithm and Sieve of Eratosthenes.",
-  Combinatorics:
-    "Counting principles, permutations, combinations, and matrix geometry.",
-  "Modular Arithmetic":
-    "Avoid overflow by reducing intermediate values modulo m.",
-  "Merge & Insert":
-    "Sort intervals by start time and combine overlapping ones.",
-  "Sweep Line": "Process start and end boundary events chronologically.",
-  "Meeting Rooms":
-    "Track concurrent resource usage with heaps or point sorting.",
 };
 
 const stringTips: Record<string, string> = {

@@ -8,36 +8,34 @@
 
 :root,
 html,
-html[data-theme="light"],
-html[data-theme="dark"],
-:root[data-theme="dark"] {
+html[data-theme="light"] {
   color-scheme: light;
-  --bg: #F1E7D3;
-  --surface: #FAF5EA;
-  --surface-2: #E9DDC4;
-  --surface-3: #DFD0B2;
-  --ink: #1A1610;
-  --ink-2: #3E362B;
-  --muted: #5B5246;
-  --border: #D9CBB0;
-  --accent: #B5442A;
-  --accent-hover: #9A3722;
-  --on-accent: #FFF8EE;
-  --accent-text: #9A3722;
-  --accent-soft: #F4D9CE;
-  --ember: #B84E0F;
-  --on-ember: #FFF8EE;
-  --success: #2E7D47;
-  --on-success: #F0FBF3;
-  --success-text: #1E5E33;
-  --success-soft: #D6EEDD;
-  --warning: #A8620A;
-  --warning-text: #844700;
-  --warning-soft: #F7E7CD;
-  --danger: #B3261E;
-  --danger-text: #A8201A;
-  --danger-soft: #F9D8D6;
-  --shadow: 0 12px 34px rgb(26 22 16 / 8%);
+  --bg: #F5EEDC;
+  --surface: #FBF7EC;
+  --surface-2: #EBE1CA;
+  --surface-3: #DED1B2;
+  --ink: #1D2A33;
+  --ink-2: #3B4A55;
+  --muted: #56636B;
+  --border: #D8CCAE;
+  --accent: #4FB3E8;
+  --accent-hover: #38A0DA;
+  --on-accent: #0B2433;
+  --accent-text: #0A6399;
+  --accent-soft: #D4EAF7;
+  --ember: #E8892B;
+  --on-ember: #2A1704;
+  --success: #2A7F52;
+  --on-success: #FFFFFF;
+  --success-text: #1F6B42;
+  --success-soft: #D9EBDD;
+  --warning: #A86A0B;
+  --warning-text: #7A4A00;
+  --warning-soft: #F4E2B8;
+  --danger: #B3362F;
+  --danger-text: #9E231C;
+  --danger-soft: #F5D6D2;
+  --shadow: 0 12px 34px rgb(29 42 51 / 7%);
   --dur-fast: 150ms;
   --dur-base: 250ms;
   --dur-slow: 400ms;
@@ -45,6 +43,38 @@ html[data-theme="dark"],
   --font-display: "Sora", Inter, sans-serif;
   --font-body: "Inter", sans-serif;
   --font-code: "JetBrains Mono", monospace;
+}
+
+html[data-theme="dark"],
+:root[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+  --bg: #0E1A22;
+  --surface: #15242E;
+  --surface-2: #1D303C;
+  --surface-3: #263C4A;
+  --ink: #F3EBD8;
+  --ink-2: #CFC6B1;
+  --muted: #9CA7AD;
+  --border: #2F4756;
+  --accent: #5CC0F2;
+  --accent-hover: #7ACCF5;
+  --on-accent: #08202F;
+  --accent-text: #8AD3F7;
+  --accent-soft: #123347;
+  --ember: #F5A03C;
+  --on-ember: #1F1204;
+  --success: #6FCB95;
+  --on-success: #0A2315;
+  --success-text: #8FDDB0;
+  --success-soft: #17342A;
+  --warning: #E8B04A;
+  --warning-text: #F5C768;
+  --warning-soft: #3A2E14;
+  --danger: #F08080;
+  --danger-text: #F89B9B;
+  --danger-soft: #3A1C1E;
+  --shadow: 0 12px 34px rgb(0 0 0 / 25%);
 }
 
 /* Browser autofill fix following theme */

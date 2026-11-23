@@ -1,5 +1,5 @@
 // scripts/check-contrast.ts
-// WCAG AA Contrast Ratio Checker for CodeCrex design tokens
+// WCAG AA Contrast Ratio Checker for CodeCrex design tokens in Light & Dark modes
 
 interface ColorTheme {
   name: string;
@@ -7,37 +7,68 @@ interface ColorTheme {
 }
 
 const lightTheme: ColorTheme = {
-  name: "Light Theme",
+  name: "Light Theme (Beige Sky)",
   tokens: {
-    bg: "#F1E7D3",
-    surface: "#FAF5EA",
-    "surface-2": "#E9DDC4",
-    "surface-3": "#DFD0B2",
-    ink: "#1A1610",
-    "ink-2": "#3E362B",
-    muted: "#5B5246",
-    border: "#D9CBB0",
-    accent: "#B5442A",
-    "accent-hover": "#9A3722",
-    "on-accent": "#FFF8EE",
-    "accent-text": "#9A3722",
-    "accent-soft": "#F4D9CE",
-    ember: "#B84E0F",
-    "on-ember": "#FFF8EE",
-    success: "#2E7D47",
-    "on-success": "#F0FBF3",
-    "success-text": "#1E5E33",
-    "success-soft": "#D6EEDD",
-    warning: "#A8620A",
-    "warning-text": "#844700",
-    "warning-soft": "#F7E7CD",
-    danger: "#B3261E",
-    "danger-text": "#A8201A",
-    "danger-soft": "#F9D8D6",
+    bg: "#F5EEDC",
+    surface: "#FBF7EC",
+    "surface-2": "#EBE1CA",
+    "surface-3": "#DED1B2",
+    ink: "#1D2A33",
+    "ink-2": "#3B4A55",
+    muted: "#56636B",
+    border: "#D8CCAE",
+    accent: "#4FB3E8",
+    "accent-hover": "#38A0DA",
+    "on-accent": "#0B2433",
+    "accent-text": "#0A6399",
+    "accent-soft": "#D4EAF7",
+    ember: "#E8892B",
+    "on-ember": "#2A1704",
+    success: "#2A7F52",
+    "on-success": "#FFFFFF",
+    "success-text": "#1F6B42",
+    "success-soft": "#D9EBDD",
+    warning: "#A86A0B",
+    "warning-text": "#7A4A00",
+    "warning-soft": "#F4E2B8",
+    danger: "#B3362F",
+    "danger-text": "#9E231C",
+    "danger-soft": "#F5D6D2",
   },
 };
 
-
+const darkTheme: ColorTheme = {
+  name: "Dark Theme (Midnight Beige)",
+  tokens: {
+    bg: "#0E1A22",
+    surface: "#15242E",
+    "surface-2": "#1D303C",
+    "surface-3": "#263C4A",
+    ink: "#F3EBD8",
+    "ink-2": "#CFC6B1",
+    muted: "#9CA7AD",
+    border: "#2F4756",
+    accent: "#5CC0F2",
+    "accent-hover": "#7ACCF5",
+    "on-accent": "#08202F",
+    "accent-text": "#8AD3F7",
+    "accent-soft": "#123347",
+    ember: "#F5A03C",
+    "on-ember": "#1F1204",
+    success: "#6FCB95",
+    "on-success": "#0A2315",
+    "success-text": "#8FDDB0",
+    "success-soft": "#17342A",
+    warning: "#E8B04A",
+    "on-warning": "#261A02",
+    "warning-text": "#F5C768",
+    "warning-soft": "#3A2E14",
+    danger: "#F08080",
+    "on-danger": "#2A0B0D",
+    "danger-text": "#F89B9B",
+    "danger-soft": "#3A1C1E",
+  },
+};
 
 const checkPairs: [string, string][] = [
   ["ink", "bg"],
@@ -85,7 +116,7 @@ console.log("══════════════════════�
 
 let allPassed = true;
 
-const themes: ColorTheme[] = [lightTheme];
+const themes: ColorTheme[] = [lightTheme, darkTheme];
 
 for (const theme of themes) {
   console.log(`--- ${theme.name.toUpperCase()} ---`);
@@ -121,6 +152,6 @@ if (!allPassed) {
   console.error("FAIL: One or more token pairs failed WCAG AA 4.5:1 contrast requirement!\n");
   process.exit(1);
 } else {
-  console.log("PASS: All 17 token pairs satisfy WCAG AA contrast (>= 4.5:1)!\n");
+  console.log("PASS: All token pairs in Light and Dark themes satisfy WCAG AA contrast (>= 4.5:1)!\n");
   process.exit(0);
 }

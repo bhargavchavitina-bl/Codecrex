@@ -15,6 +15,27 @@ export type Problem = {
   importance: 1 | 2 | 3;
 };
 
+export const removedProblemIds: string[] = [
+  "arrays-rotate-array",
+  "arrays-next-permutation",
+  "strings-string-to-integer-atoi",
+  "math-powx-n",
+  "math-count-primes",
+  "intervals-insert-interval",
+  "intervals-meeting-rooms-ii",
+  "intervals-employee-free-time",
+  "math-plus-one",
+  "math-palindrome-number",
+  "math-reverse-integer",
+  "math-excel-sheet-column-number",
+  "math-factorial-trailing-zeroes",
+  "math-multiply-strings",
+  "math-rotate-image",
+  "math-spiral-matrix",
+  "math-set-matrix-zeroes",
+  "intervals-interval-list-intersections"
+];
+
 export function problemMatchesTopic(p: Problem, topicId: string): boolean {
   return p.topicId === topicId || (p.topicIds ? p.topicIds.includes(topicId) : false);
 }
@@ -903,15 +924,7 @@ export const problems: Problem[] = [
     "title": "Roman to Integer",
     "difficulty": "Easy",
     "topicId": "strings",
-    "topicIds": [
-      "strings",
-      "math"
-    ],
     "pattern": "Two Pointers",
-    "patternByTopic": {
-      "strings": "Two Pointers",
-      "math": "Combinatorics"
-    },
     "leetcodeSlug": "roman-to-integer",
     "companies": [],
     "tags": [
@@ -1113,32 +1126,6 @@ export const problems: Problem[] = [
     "importance": 3
   },
   {
-    "id": "arrays-rotate-array",
-    "title": "Rotate Array",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "rotate-array",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "arrays-next-permutation",
-    "title": "Next Permutation",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "next-permutation",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 3
-  },
-  {
     "id": "arrays-missing-number",
     "title": "Missing Number",
     "difficulty": "Easy",
@@ -1202,19 +1189,6 @@ export const problems: Problem[] = [
       "same direction"
     ],
     "importance": 1
-  },
-  {
-    "id": "strings-string-to-integer-atoi",
-    "title": "String to Integer (atoi)",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Modular Arithmetic",
-    "leetcodeSlug": "string-to-integer-atoi",
-    "companies": [],
-    "tags": [
-      "modular arithmetic"
-    ],
-    "importance": 2
   },
   {
     "id": "hashing-longest-consecutive-sequence",
@@ -2203,84 +2177,12 @@ export const problems: Problem[] = [
     "id": "math-happy-number",
     "title": "Happy Number",
     "difficulty": "Easy",
-    "topicId": "math",
-    "topicIds": [
-      "math",
-      "two-pointers"
-    ],
-    "pattern": "GCD & Primes",
-    "patternByTopic": {
-      "two-pointers": "Fast & Slow"
-    },
+    "topicId": "two-pointers",
+    "pattern": "Fast & Slow",
     "leetcodeSlug": "happy-number",
     "companies": [],
     "tags": [
       "gcd & primes"
-    ],
-    "importance": 1
-  },
-  {
-    "id": "math-powx-n",
-    "title": "Pow(x, n)",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Modular Arithmetic",
-    "leetcodeSlug": "powx-n",
-    "companies": [],
-    "tags": [
-      "modular arithmetic"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-count-primes",
-    "title": "Count Primes",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "GCD & Primes",
-    "leetcodeSlug": "count-primes",
-    "companies": [],
-    "tags": [
-      "gcd & primes"
-    ],
-    "importance": 1
-  },
-  {
-    "id": "intervals-insert-interval",
-    "title": "Insert Interval",
-    "difficulty": "Medium",
-    "topicId": "intervals",
-    "pattern": "Merge & Insert",
-    "leetcodeSlug": "insert-interval",
-    "companies": [],
-    "tags": [
-      "merge & insert"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "intervals-meeting-rooms-ii",
-    "title": "Meeting Rooms II",
-    "difficulty": "Medium",
-    "topicId": "intervals",
-    "pattern": "Meeting Rooms",
-    "leetcodeSlug": "meeting-rooms-ii",
-    "companies": [],
-    "tags": [
-      "meeting rooms"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "intervals-employee-free-time",
-    "title": "Employee Free Time",
-    "difficulty": "Hard",
-    "topicId": "intervals",
-    "pattern": "Sweep Line",
-    "leetcodeSlug": "employee-free-time",
-    "companies": [],
-    "tags": [
-      "sweep line"
     ],
     "importance": 1
   },
@@ -2926,15 +2828,7 @@ export const problems: Problem[] = [
     "title": "Minimum Number of Arrows to Burst Balloons",
     "difficulty": "Medium",
     "topicId": "greedy",
-    "topicIds": [
-      "greedy",
-      "intervals"
-    ],
     "pattern": "Intervals",
-    "patternByTopic": {
-      "greedy": "Intervals",
-      "intervals": "Sweep Line"
-    },
     "leetcodeSlug": "minimum-number-of-arrows-to-burst-balloons",
     "companies": [],
     "tags": [
@@ -3199,136 +3093,6 @@ export const problems: Problem[] = [
     "companies": [],
     "tags": [
       "xor patterns"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-plus-one",
-    "title": "Plus One",
-    "difficulty": "Easy",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "plus-one",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 1
-  },
-  {
-    "id": "math-palindrome-number",
-    "title": "Palindrome Number",
-    "difficulty": "Easy",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "palindrome-number",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 1
-  },
-  {
-    "id": "math-reverse-integer",
-    "title": "Reverse Integer",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "reverse-integer",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-excel-sheet-column-number",
-    "title": "Excel Sheet Column Number",
-    "difficulty": "Easy",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "excel-sheet-column-number",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 1
-  },
-  {
-    "id": "math-factorial-trailing-zeroes",
-    "title": "Factorial Trailing Zeroes",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "GCD & Primes",
-    "leetcodeSlug": "factorial-trailing-zeroes",
-    "companies": [],
-    "tags": [
-      "gcd & primes"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-multiply-strings",
-    "title": "Multiply Strings",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "multiply-strings",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-rotate-image",
-    "title": "Rotate Image",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "rotate-image",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-spiral-matrix",
-    "title": "Spiral Matrix",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "spiral-matrix",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "math-set-matrix-zeroes",
-    "title": "Set Matrix Zeroes",
-    "difficulty": "Medium",
-    "topicId": "math",
-    "pattern": "Combinatorics",
-    "leetcodeSlug": "set-matrix-zeroes",
-    "companies": [],
-    "tags": [
-      "combinatorics"
-    ],
-    "importance": 2
-  },
-  {
-    "id": "intervals-interval-list-intersections",
-    "title": "Interval List Intersections",
-    "difficulty": "Medium",
-    "topicId": "intervals",
-    "pattern": "Merge & Insert",
-    "leetcodeSlug": "interval-list-intersections",
-    "companies": [],
-    "tags": [
-      "merge & insert"
     ],
     "importance": 2
   }

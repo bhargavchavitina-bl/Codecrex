@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   Link,
   NavLink,
@@ -31,8 +31,10 @@ import {
   Layers,
   LogOut,
   Menu,
+  Moon,
   Search,
   Star,
+  Sun,
   Trophy,
   User,
   X,
@@ -73,6 +75,15 @@ import {
 } from "./store";
 import { supabase } from "./lib/supabase";
 import LearnContent from "./components/LearnContent";
+import {
+  CelebrationProvider,
+  useCelebrations,
+} from "./components/celebrations/CelebrationContext";
+import { CoinCheckbox } from "./components/celebrations/CoinCheckbox";
+
+const DevAnimations = import.meta.env.DEV
+  ? React.lazy(() => import("./components/celebrations/DevAnimations"))
+  : null;
 function Logo() {
   const gradientId = `cc-gradient-${useId().replace(/:/g, "")}`;
   return (
@@ -84,14 +95,14 @@ function Logo() {
       <svg width="38" height="38" viewBox="0 0 64 64" aria-hidden="true">
         <defs>
           <linearGradient id={gradientId} x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0" stopColor="#B5442A" />
-            <stop offset="1" stopColor="#E8742A" />
+            <stop offset="0" stopColor="#0F6FA6" />
+            <stop offset="1" stopColor="#2689C4" />
           </linearGradient>
         </defs>
         <rect width="64" height="64" rx="16" fill={`url(#${gradientId})`} />
         <path
           d="M33.96 23.64A13 13 0 1 0 33.96 40.36"
-          stroke="#F1E7D3"
+          stroke="#F5EEDC"
           strokeWidth="5.5"
           strokeLinecap="round"
           fill="none"
@@ -112,15 +123,18 @@ function Logo() {
   );
 }
 function App() {
-  const { user, authReady } = useStore();
+  const { user, authReady, dark } = useStore();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   useEffect(() => {
     return subscribeAuth();
   }, []);
   useEffect(() => {
-    document.documentElement.dataset.theme = "light";
-  }, []);
+    const themeName = dark ? "dark" : "light";
+    document.documentElement.dataset.theme = themeName;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", dark ? "#0E1A22" : "#F5EEDC");
+  }, [dark]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -132,17 +146,18 @@ function App() {
     return () => clearInterval(t);
   }, []);
   return (
-    <MotionConfig reducedMotion="user">
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        className="route-transition"
-        key={location.pathname}
-        initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: reduceMotion ? 0 : -12 }}
-        transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: [0.22, 1, 0.36, 1] }}
-      >
-    <Routes location={location}>
+    <CelebrationProvider>
+      <MotionConfig reducedMotion="user">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          className="route-transition"
+          key={location.pathname}
+          initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: reduceMotion ? 0 : -12 }}
+          transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: [0.22, 1, 0.36, 1] }}
+        >
+      <Routes location={location}>
       <Route
         path="/"
         element={
@@ -236,11 +251,24 @@ function App() {
           }
         />
       </Route>
+      {import.meta.env.DEV && DevAnimations && (
+        <Route
+          path="/dev/animations"
+          element={
+            <Shell>
+              <Suspense fallback={<div className="content-wrap" style={{ padding: 40 }}>Loading preview...</div>}>
+                <DevAnimations />
+              </Suspense>
+            </Shell>
+          }
+        />
+      )}
       <Route path="*" element={<NotFound />} />
     </Routes>
       </motion.div>
     </AnimatePresence>
     </MotionConfig>
+    </CelebrationProvider>
   );
 }
 function Protected() {
@@ -718,7 +746,7 @@ function AuthLayout({
               </div>
               <div>
                 <b>DSA Roadmap</b>
-                <p>215 hand-picked problems across 22 patterns</p>
+                <p>{problems.length} hand-picked problems across {topics.length} topics</p>
               </div>
             </div>
 
@@ -1197,6 +1225,8 @@ function AuthPage({
 function Shell({ children }: { children: React.ReactNode }) {
   const {
     user,
+    dark,
+    theme,
     activeDays,
     toast,
     setToast,
@@ -1209,8 +1239,26 @@ function Shell({ children }: { children: React.ReactNode }) {
     [streakOpen, setStreakOpen] = useState(false),
     [scrolled, setScrolled] = useState(false),
     [notice, setNotice] = useState("");
+  const { triggerStreakBroken, flameFlareActive } = useCelebrations();
   const today = new Date().toLocaleDateString("en-CA"),
     streak = calcStreak(activeDays, today);
+  const isAtRisk = streak > 0 && !activeDays.includes(today) && new Date().getHours() >= 18;
+
+  // Detect broken streak once on visit
+  useEffect(() => {
+    if (activeDays.length === 0) return;
+    const sorted = [...activeDays].sort().reverse();
+    const lastActive = sorted[0];
+    const diffDays = Math.round((new Date(today).getTime() - new Date(lastActive).getTime()) / 86400000);
+    if (diffDays > 1) {
+      const prevStreak = calcStreak(activeDays, lastActive);
+      const lastShown = localStorage.getItem("codecrest-last-break-shown");
+      if (prevStreak > 0 && lastShown !== lastActive) {
+        localStorage.setItem("codecrest-last-break-shown", lastActive);
+        triggerStreakBroken(prevStreak);
+      }
+    }
+  }, [activeDays, today, triggerStreakBroken]);
   useEffect(() => {
     if (toast) {
       setNotice(toast.message);
@@ -1274,13 +1322,33 @@ function Shell({ children }: { children: React.ReactNode }) {
             onClick={() => setStreakOpen((open) => !open)}
             className={
               "streak-button " +
-              (activeDays.includes(today) ? "streak-done" : "")
+              (activeDays.includes(today) ? "streak-done " : "") +
+              (flameFlareActive ? "streak-flare-pop " : "") +
+              (isAtRisk ? "at-risk " : "")
             }
             aria-label={`Current streak ${streak} days`}
+            title={isAtRisk ? `Solve one problem to keep your ${streak}-day streak` : undefined}
             aria-expanded={streakOpen}
           >
             <Flame size={18} fill="currentColor" />
             <b><CountUp value={streak} /></b>
+          </button>
+          <button
+            onClick={theme}
+            className="icon-button theme-button"
+            aria-label={dark ? "Use light theme" : "Use dark theme"}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={dark ? "sun" : "moon"}
+                initial={{ opacity: 0, rotate: -35, scale: 0.75 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 35, scale: 0.75 }}
+                transition={{ duration: 0.18 }}
+              >
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </motion.span>
+            </AnimatePresence>
           </button>
           <div className="user-menu">
             <Link to="/profile" className="user-profile-link" aria-label="Profile">
@@ -1778,7 +1846,8 @@ function PageHead({
 }
 function Dashboard() {
   const { user, solved, bookmarks, revisit, activeDays, attempts } = useStore(),
-    pct = Math.round((solved.length / problems.length) * 100),
+    activeSolved = problems.filter((p) => solved.includes(p.id)).length,
+    pct = Math.round((activeSolved / problems.length) * 100),
     next =
       topics.find((t) =>
         problems.some(
@@ -1838,7 +1907,7 @@ function Dashboard() {
             </span>
           </div>
           <div className="stat-number">
-            {solved.length}
+            {activeSolved}
             <span style={{ color: "var(--muted)" }}> / {problems.length}</span>
           </div>
           <div className="stat-label">Problems solved</div>
@@ -2338,10 +2407,15 @@ const difficultyRank: Record<string, number> = {
 };
 
 function TopicPage() {
-  const { topicId } = useParams(),
-    topic = topics.find((t) => t.id.toLowerCase() === topicId?.toLowerCase());
-  const { solved, bookmarks, revisit, notes, toggle, note, markSession } =
+  const { topicId } = useParams();
+  const removedTopicIds = ["math", "intervals", "math-number-theory"];
+  if (topicId && removedTopicIds.includes(topicId.toLowerCase())) {
+    return <Navigate to="/dsa" replace />;
+  }
+  const topic = topics.find((t) => t.id.toLowerCase() === topicId?.toLowerCase());
+  const { solved, bookmarks, revisit, notes, toggle, note, markSession, activeDays } =
     useStore();
+  const { triggerSolve } = useCelebrations();
   const [query, setQuery] = useState(""),
     [difficulty, setDifficulty] = useState("All"),
     [status, setStatus] = useState("All problems"),
@@ -2478,9 +2552,34 @@ function TopicPage() {
     (group) => group.items.length > 0,
   );
 
-  function solvedToggle(id: string) {
-    toggle("solved", id);
-    if (!solved.includes(id)) markSession();
+  function solvedToggle(p: Problem, e?: React.MouseEvent) {
+    if (!topic) return;
+    const isCurrentlySolved = solved.includes(p.id);
+    toggle("solved", p.id);
+
+    if (!isCurrentlySolved) {
+      markSession();
+      const today = new Date().toLocaleDateString("en-CA");
+      const isFirstToday = !activeDays.includes(today);
+      const activeSolvedCount = problems.filter((pr) => solved.includes(pr.id) || pr.id === p.id).length;
+
+      const topicProblems = problems.filter((pr) => problemMatchesTopic(pr, topic.id));
+      const willBeAllSolved =
+        topicProblems.length > 0 &&
+        topicProblems.every((pr) => solved.includes(pr.id) || pr.id === p.id);
+
+      const x = e?.clientX ?? (typeof window !== "undefined" ? window.innerWidth / 2 : 200);
+      const y = e?.clientY ?? (typeof window !== "undefined" ? window.innerHeight / 2 : 200);
+
+      triggerSolve({
+        x,
+        y,
+        totalSolved: activeSolvedCount,
+        topicCompleteName: willBeAllSolved ? topic.name : undefined,
+        isFirstToday,
+      });
+    }
+
     void saveProgress().catch(console.error);
   }
   const continueP = all.find((p) => !solved.includes(p.id));
@@ -2748,7 +2847,7 @@ function TopicPage() {
                           revisit={revisit.includes(pr.id)}
                           note={notes[pr.id] || ""}
                           noteOpen={noteOpen === pr.id}
-                          onSolved={() => solvedToggle(pr.id)}
+                          onSolved={(e) => solvedToggle(pr, e)}
                           onBookmark={() => {
                             toggle("bookmarks", pr.id);
                             void saveProgress().catch(console.error);
@@ -2824,7 +2923,7 @@ function ProblemRow({
   note: string;
   noteOpen: boolean;
   index: number;
-  onSolved: () => void;
+  onSolved: (e: React.MouseEvent) => void;
   onBookmark: () => void;
   onRevisit: () => void;
   onNote: () => void;
@@ -2840,15 +2939,12 @@ function ProblemRow({
       transition={{ duration: reduceMotion ? 0.12 : 0.22, delay: index < 12 && !reduceMotion ? index * 0.035 : 0 }}
     >
       <div className="problem-row">
-        <label
-          className="problem-check"
-          title={solved ? "Mark unsolved" : "Mark solved"}
-        >
-          <input type="checkbox" checked={solved} onChange={onSolved} />
-          <span>
-            <Check size={12} />
-          </span>
-        </label>
+        <CoinCheckbox
+          id={p.id}
+          isSolved={solved}
+          onToggle={onSolved}
+          title={p.title}
+        />
         <div className="problem-main">
           <a
             href={`https://leetcode.com/problems/${p.leetcodeSlug}/`}
@@ -3582,12 +3678,21 @@ function TestResult() {
   );
 }
 function Profile() {
-  const { user, solved, bookmarks, revisit, updateProfile } = useStore(),
+  const {
+    user,
+    solved,
+    bookmarks,
+    revisit,
+    updateProfile,
+    celebrationsEnabled,
+    toggleCelebrations,
+  } = useStore(),
     [name, setName] = useState(user?.name || ""),
     [college, setCollege] = useState(user?.college || ""),
     [target, setTarget] = useState(user?.target || "Software Engineer"),
     [saved, setSaved] = useState(false);
-  const percent = Math.round((solved.length / problems.length) * 100);
+  const activeSolved = problems.filter((p) => solved.includes(p.id)).length;
+  const percent = Math.round((activeSolved / problems.length) * 100);
   return (
     <div className="content-wrap">
       <PageHead
@@ -3670,7 +3775,7 @@ function Profile() {
               <ProgressRing value={percent} size={48} />
             </div>
             <div className="profile-progress-stat">
-              <b>{solved.length}</b>
+              <b>{activeSolved}</b>
               <span>problems solved</span>
             </div>
             <div className="progress-track">
@@ -3698,6 +3803,28 @@ function Profile() {
               <span className="eyebrow">YOUR TARGET</span>
               <h3>{target}</h3>
               <p>Keep your goal in sight. Every session moves you closer.</p>
+            </div>
+          </section>
+          <section className="card" style={{ padding: 24, marginTop: 16 }}>
+            <div className="card-heading" style={{ marginBottom: 12 }}>
+              <div>
+                <span className="eyebrow">PREFERENCES</span>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)", margin: 0 }}>Celebration animations</h3>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--ink-2)", fontWeight: 500 }}>3D coin flip & celebration effects</p>
+                <p style={{ margin: "2px 0 0 0", fontSize: 12, color: "var(--muted)" }}>Interactive 3D coin flips, tumbling shards, and milestone medals on question completion</p>
+              </div>
+              <button
+                type="button"
+                className={`btn btn-sm ${celebrationsEnabled ? "btn-primary" : "btn-secondary"}`}
+                onClick={toggleCelebrations}
+                aria-pressed={celebrationsEnabled}
+              >
+                {celebrationsEnabled ? "Enabled" : "Disabled"}
+              </button>
             </div>
           </section>
         </div>

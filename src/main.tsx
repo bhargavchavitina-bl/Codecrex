@@ -16,6 +16,7 @@ import "@fontsource/jetbrains-mono/latin-600.css";
 import "./styles/tokens.css";
 import "./styles.css";
 import "./styles/visual.css";
+import "./styles/celebrations.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

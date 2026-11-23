@@ -176,12 +176,4 @@
 - Masks & Subsets
 - Bit Counting
 
-### Math & Number Theory
-- GCD & Primes
-- Combinatorics
-- Modular Arithmetic
 
-### Intervals
-- Merge & Insert
-- Sweep Line
-- Meeting Rooms
