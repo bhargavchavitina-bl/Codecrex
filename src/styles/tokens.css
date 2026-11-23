@@ -10,19 +10,19 @@
 html,
 html[data-theme="light"] {
   color-scheme: light;
-  --bg: #F5EEDC;
-  --surface: #FBF7EC;
-  --surface-2: #EBE1CA;
-  --surface-3: #DED1B2;
-  --ink: #1D2A33;
-  --ink-2: #3B4A55;
-  --muted: #56636B;
-  --border: #D8CCAE;
-  --accent: #4FB3E8;
-  --accent-hover: #38A0DA;
-  --on-accent: #0B2433;
-  --accent-text: #0A6399;
-  --accent-soft: #D4EAF7;
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface-2: #F0EAE1;
+  --surface-3: #E4DDD0;
+  --ink: #141E28;
+  --ink-2: #334155;
+  --muted: #576574;
+  --border: #E2DBD0;
+  --accent: #0274B6;
+  --accent-hover: #0369A1;
+  --on-accent: #FFFFFF;
+  --accent-text: #026AA7;
+  --accent-soft: #EBF4FC;
   --ember: #E8892B;
   --on-ember: #2A1704;
   --success: #2A7F52;
@@ -35,7 +35,7 @@ html[data-theme="light"] {
   --danger: #B3362F;
   --danger-text: #9E231C;
   --danger-soft: #F5D6D2;
-  --shadow: 0 12px 34px rgb(29 42 51 / 7%);
+  --shadow: 0 4px 20px rgb(20 30 40 / 5%), 0 1px 3px rgb(20 30 40 / 3%);
   --dur-fast: 150ms;
   --dur-base: 250ms;
   --dur-slow: 400ms;
@@ -49,32 +49,32 @@ html[data-theme="dark"],
 :root[data-theme="dark"],
 .dark {
   color-scheme: dark;
-  --bg: #0E1A22;
-  --surface: #15242E;
-  --surface-2: #1D303C;
-  --surface-3: #263C4A;
-  --ink: #F3EBD8;
-  --ink-2: #CFC6B1;
-  --muted: #9CA7AD;
-  --border: #2F4756;
-  --accent: #5CC0F2;
-  --accent-hover: #7ACCF5;
+  --bg: #0B131B;
+  --surface: #131E2A;
+  --surface-2: #1A2837;
+  --surface-3: #233444;
+  --ink: #F0F4F8;
+  --ink-2: #CAD4DF;
+  --muted: #8B9BAC;
+  --border: #243545;
+  --accent: #38BDF8;
+  --accent-hover: #60A5FA;
   --on-accent: #08202F;
-  --accent-text: #8AD3F7;
-  --accent-soft: #123347;
+  --accent-text: #7DD3FC;
+  --accent-soft: #0F2A42;
   --ember: #F5A03C;
   --on-ember: #1F1204;
-  --success: #6FCB95;
-  --on-success: #0A2315;
-  --success-text: #8FDDB0;
-  --success-soft: #17342A;
-  --warning: #E8B04A;
-  --warning-text: #F5C768;
-  --warning-soft: #3A2E14;
-  --danger: #F08080;
-  --danger-text: #F89B9B;
-  --danger-soft: #3A1C1E;
-  --shadow: 0 12px 34px rgb(0 0 0 / 25%);
+  --success: #4ADE80;
+  --on-success: #052E16;
+  --success-text: #86EFAC;
+  --success-soft: #0F3820;
+  --warning: #FBBF24;
+  --warning-text: #FDE68A;
+  --warning-soft: #382A0F;
+  --danger: #F87171;
+  --danger-text: #FCA5A5;
+  --danger-soft: #381515;
+  --shadow: 0 8px 30px rgb(0 0 0 / 35%);
 }
 
 /* Browser autofill fix following theme */

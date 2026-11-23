@@ -168,7 +168,9 @@ export const useStore = create<State>()(
         set({ celebrationsEnabled }),
 
       toggleCelebrations: () =>
-        set({ celebrationsEnabled: !get().celebrationsEnabled }),
+        set((s) => ({
+          celebrationsEnabled: s.celebrationsEnabled === false ? true : false,
+        })),
 
       markSession: () => {
         const today = getLocalDateString();
@@ -323,9 +325,16 @@ export const useStore = create<State>()(
     {
       name: "codecrest-preferences",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (state.celebrationsEnabled === undefined || state.celebrationsEnabled === null) {
+            state.celebrationsEnabled = true;
+          }
+        }
+      },
       partialize: (s) => ({
         dark: s.dark,
-        celebrationsEnabled: s.celebrationsEnabled,
+        celebrationsEnabled: s.celebrationsEnabled !== false,
         // Only persist user if explicitly guest; authenticated users rely on Supabase session token
         user: s.user?.guest ? s.user : null,
       }),

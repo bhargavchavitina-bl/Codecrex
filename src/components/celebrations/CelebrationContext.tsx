@@ -68,7 +68,7 @@ export const CelebrationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const triggerSolve = useCallback(
     ({ x, y, totalSolved, topicCompleteName, isFirstToday }: SolveEventParams) => {
-      if (!celebrationsEnabled) return;
+      if (celebrationsEnabled === false) return;
 
       // 1. Shards burst & floating +1 chip
       const burstId = `${Date.now()}-${Math.random()}`;

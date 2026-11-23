@@ -36,6 +36,7 @@ import {
   Star,
   Sun,
   Trophy,
+  Sparkles,
   User,
   X,
   Clock3,
@@ -133,7 +134,7 @@ function App() {
     const themeName = dark ? "dark" : "light";
     document.documentElement.dataset.theme = themeName;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", dark ? "#0E1A22" : "#F5EEDC");
+    if (meta) meta.setAttribute("content", dark ? "#0B131B" : "#F7F5F0");
   }, [dark]);
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -3686,13 +3687,39 @@ function Profile() {
     updateProfile,
     celebrationsEnabled,
     toggleCelebrations,
+    setCelebrationsEnabled,
   } = useStore(),
     [name, setName] = useState(user?.name || ""),
     [college, setCollege] = useState(user?.college || ""),
     [target, setTarget] = useState(user?.target || "Software Engineer"),
     [saved, setSaved] = useState(false);
+  const { triggerSolve, triggerMilestone } = useCelebrations();
+  const isCelebrationsOn = celebrationsEnabled !== false;
   const activeSolved = problems.filter((p) => solved.includes(p.id)).length;
   const percent = Math.round((activeSolved / problems.length) * 100);
+
+  const handlePreviewBurst = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isCelebrationsOn) {
+      setCelebrationsEnabled(true);
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    triggerSolve({
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+      totalSolved: activeSolved || 1,
+      isFirstToday: true,
+    });
+  };
+
+  const handlePreviewMedal = () => {
+    if (!isCelebrationsOn) {
+      setCelebrationsEnabled(true);
+    }
+    triggerMilestone(
+      "Mastery Milestone",
+      "You conquered your algorithmic challenges with precision! Consistency builds mastery."
+    );
+  };
   return (
     <div className="content-wrap">
       <PageHead
@@ -3805,26 +3832,60 @@ function Profile() {
               <p>Keep your goal in sight. Every session moves you closer.</p>
             </div>
           </section>
-          <section className="card" style={{ padding: 24, marginTop: 16 }}>
-            <div className="card-heading" style={{ marginBottom: 12 }}>
+          <section className="card celebration-settings-card" style={{ padding: 24, marginTop: 16 }}>
+            <div className="card-heading" style={{ marginBottom: 16 }}>
               <div>
                 <span className="eyebrow">PREFERENCES</span>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)", margin: 0 }}>Celebration animations</h3>
               </div>
+              <span className={`badge ${isCelebrationsOn ? "badge-success" : "badge-muted"}`} style={{ fontSize: 11, padding: "2px 8px" }}>
+                {isCelebrationsOn ? "Enabled" : "Disabled"}
+              </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
               <div>
-                <p style={{ margin: 0, fontSize: 14, color: "var(--ink-2)", fontWeight: 500 }}>3D coin flip & celebration effects</p>
-                <p style={{ margin: "2px 0 0 0", fontSize: 12, color: "var(--muted)" }}>Interactive 3D coin flips, tumbling shards, and milestone medals on question completion</p>
+                <p style={{ margin: 0, fontSize: 14, color: "var(--ink-2)", fontWeight: 600 }}>3D coin flip & celebration effects</p>
+                <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>
+                  Interactive 3D coin flips, tumbling shards, and milestone medals on question completion.
+                </p>
               </div>
               <button
                 type="button"
-                className={`btn btn-sm ${celebrationsEnabled ? "btn-primary" : "btn-secondary"}`}
+                role="switch"
+                aria-checked={isCelebrationsOn}
+                className={`toggle-switch ${isCelebrationsOn ? "is-on" : "is-off"}`}
                 onClick={toggleCelebrations}
-                aria-pressed={celebrationsEnabled}
+                title={isCelebrationsOn ? "Disable celebration animations" : "Enable celebration animations"}
               >
-                {celebrationsEnabled ? "Enabled" : "Disabled"}
+                <span className="toggle-slider" />
               </button>
+            </div>
+            <div className="celebration-preview-container" style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <Sparkles size={14} style={{ color: "var(--accent)" }} /> Live Animation Previews:
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={handlePreviewBurst}
+                    style={{ gap: 6 }}
+                  >
+                    <Sparkles size={13} />
+                    Preview 3D Burst
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={handlePreviewMedal}
+                    style={{ gap: 6 }}
+                  >
+                    <Trophy size={13} />
+                    Preview 3D Medal
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -3837,19 +3898,9 @@ function StreakPage() {
     today = new Date().toLocaleDateString("en-CA"),
     streak = calcStreak(activeDays, today);
   const date = new Date(),
-    month = date.getMonth(),
     year = date.getFullYear(),
-    firstDay = new Date(year, month, 1).getDay(),
-    daysInMonth = new Date(year, month + 1, 0).getDate(),
-    monthName = date.toLocaleDateString("en", {
-      month: "long",
-      year: "numeric",
-    }),
-    history = Array.from({ length: 364 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (363 - i));
-      return { key: d.toLocaleDateString("en-CA"), day: d.getDay() };
-    });
+    currentMonth = date.getMonth();
+
   const longest = (() => {
     const s = [...activeDays].sort();
     let best = 0,
@@ -3866,6 +3917,30 @@ function StreakPage() {
     }
     return Math.max(best, streak);
   })();
+
+  const activeDaysThisYear = activeDays.filter((d) => d.startsWith(`${year}-`)).length;
+
+  const monthsData = Array.from({ length: 12 }, (_, m) => {
+    const firstDay = new Date(year, m, 1).getDay();
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    const name = new Date(year, m, 1).toLocaleDateString("en", { month: "long" });
+    const shortName = new Date(year, m, 1).toLocaleDateString("en", { month: "short" });
+    const monthPrefix = `${year}-${String(m + 1).padStart(2, "0")}`;
+    const activeCount = activeDays.filter((d) => d.startsWith(monthPrefix)).length;
+    const isCurrentMonth = m === currentMonth;
+
+    return {
+      monthIdx: m,
+      name,
+      shortName,
+      firstDay,
+      daysInMonth,
+      monthPrefix,
+      activeCount,
+      isCurrentMonth,
+    };
+  });
+
   return (
     <div className="content-wrap">
       <PageHead
@@ -3873,6 +3948,7 @@ function StreakPage() {
         title="Your streak"
         description="A streak is a reminder of the days you made time for your goals."
       />
+
       <div className="streak-hero card">
         <div className="streak-flame">
           <Flame size={35} fill="currentColor" />
@@ -3895,74 +3971,119 @@ function StreakPage() {
           <small>longest streak</small>
         </div>
       </div>
-      <div className="streak-panels">
-        <section className="card calendar-card">
-          <div className="card-heading">
-            <div>
-              <span className="eyebrow">YOUR CONSISTENCY</span>
-              <h2>{monthName}</h2>
-            </div>
-            <span className="calendar-status">
-              <i className="legend-dot" />
-              {activeDays.length} active days
+
+      {/* Annual Summary & Month Jump Navigation */}
+      <div className="streak-year-header card" style={{ padding: "20px 24px", marginTop: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <span className="eyebrow" style={{ color: "var(--accent-text)" }}>ANNUAL CONSISTENCY · {year}</span>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, margin: "4px 0 0", color: "var(--ink)" }}>
+              All 12 Months
+            </h2>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>
+              {activeDaysThisYear} active {activeDaysThisYear === 1 ? "day" : "days"} recorded across the year
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span className="month-badge active">
+              <i className="legend-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+              Active Day
+            </span>
+            <span className="month-badge today">
+              Today
             </span>
           </div>
-          <div className="month-grid">
-            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-              <span className="month-weekday" key={d}>
-                {d}
-              </span>
-            ))}
-            {Array.from({ length: firstDay }, (_, i) => (
-              <span key={"blank" + i} />
-            ))}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const d = i + 1,
-                dt = new Date(year, month, d).toLocaleDateString("en-CA");
-              return (
-                <span
-                  key={d}
-                  className={`month-day ${activeDays.includes(dt) ? "day-active" : ""} ${dt === today ? "day-today" : ""}`}
-                >
+        </div>
+
+        {/* Month Quick Jump Bar */}
+        <div className="month-jump-bar" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+          {monthsData.map((m) => (
+            <button
+              key={m.monthIdx}
+              type="button"
+              className={`month-jump-pill ${m.isCurrentMonth ? "is-current" : ""} ${m.activeCount > 0 ? "has-active" : ""}`}
+              onClick={() => {
+                const el = document.getElementById(`month-card-${m.monthIdx}`);
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              title={`Jump to ${m.name}${m.activeCount > 0 ? ` (${m.activeCount} active)` : ""}`}
+            >
+              <span>{m.shortName}</span>
+              {m.activeCount > 0 && <span className="jump-pill-dot" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 12 Separate Month Cards Grid */}
+      <div className="months-grid" style={{ marginTop: 20 }}>
+        {monthsData.map((m) => (
+          <section
+            key={m.monthIdx}
+            id={`month-card-${m.monthIdx}`}
+            className={`card month-card-separate ${m.isCurrentMonth ? "is-current-month" : ""}`}
+          >
+            <div className="month-card-header">
+              <div>
+                <span className="month-eyebrow">MONTH {String(m.monthIdx + 1).padStart(2, "0")}</span>
+                <h3 className="month-title">{m.name}</h3>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {m.isCurrentMonth && (
+                  <span className="badge badge-accent" style={{ fontSize: 11, padding: "2px 8px" }}>
+                    Current
+                  </span>
+                )}
+                <span className={`badge ${m.activeCount > 0 ? "badge-success" : "badge-muted"}`} style={{ fontSize: 11, padding: "2px 8px" }}>
+                  {m.activeCount} {m.activeCount === 1 ? "day" : "days"}
+                </span>
+              </div>
+            </div>
+
+            <div className="month-grid">
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                <span className="month-weekday" key={d}>
                   {d}
                 </span>
-              );
-            })}
-          </div>
-        </section>
-        <section className="card heatmap-card">
-          <div className="card-heading">
-            <div>
-              <span className="eyebrow">THE LONG VIEW</span>
-              <h2>Your past year</h2>
-            </div>
-            <span className="heatmap-total">
-              {activeDays.length} active days
-            </span>
-          </div>
-          <div className="heatmap-scroll">
-            <div className="heatmap-grid">
-              {history.map((d) => (
-                <i
-                  title={`${d.key}${activeDays.includes(d.key) ? " · active" : ""}`}
-                  key={d.key}
-                  className={activeDays.includes(d.key) ? "heat-active" : ""}
-                  style={{ gridRow: d.day + 1 }}
-                />
               ))}
+              {Array.from({ length: m.firstDay }, (_, i) => (
+                <span key={"blank-" + i} className="month-day-empty" />
+              ))}
+              {Array.from({ length: m.daysInMonth }, (_, i) => {
+                const dayNum = i + 1;
+                const dateKey = `${year}-${String(m.monthIdx + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+                const isActive = activeDays.includes(dateKey);
+                const isToday = dateKey === today;
+                return (
+                  <span
+                    key={dayNum}
+                    className={`month-day ${isActive ? "day-active" : ""} ${isToday ? "day-today" : ""}`}
+                    title={`${dateKey}${isActive ? " · Active" : ""}${isToday ? " · Today" : ""}`}
+                  >
+                    {dayNum}
+                  </span>
+                );
+              })}
             </div>
-          </div>
-          <div className="heatmap-legend">
-            <span>Less</span>
-            <i />
-            <i className="heat-active" />
-            <i className="heat-active heat-strong" />
-            <span>More</span>
-          </div>
-        </section>
+
+            <div className="month-card-footer">
+              <div className="month-progress-bar">
+                <div
+                  className="month-progress-fill"
+                  style={{ width: `${Math.round((m.activeCount / m.daysInMonth) * 100)}%` }}
+                />
+              </div>
+              <div className="month-footer-meta">
+                <span>{m.activeCount} / {m.daysInMonth} days active</span>
+                <span>{Math.round((m.activeCount / m.daysInMonth) * 100)}%</span>
+              </div>
+            </div>
+          </section>
+        ))}
       </div>
-      <div className="streak-note">
-        <Flame size={17} fill="currentColor" />
+
+      <div className="streak-note" style={{ marginTop: 24 }}>
+        <Flame size={18} fill="currentColor" />
         <p>
           <b>How it works</b> — Your streak grows when you solve a DSA problem
           or finish an aptitude test. Your local calendar sets the day.
