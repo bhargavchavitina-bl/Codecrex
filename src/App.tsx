@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
   NavLink,
@@ -31,10 +31,8 @@ import {
   Layers,
   LogOut,
   Menu,
-  Moon,
   Search,
   Star,
-  Sun,
   Trophy,
   Sparkles,
   User,
@@ -76,6 +74,7 @@ import {
 } from "./store";
 import { supabase } from "./lib/supabase";
 import LearnContent from "./components/LearnContent";
+import { getAptitudeTopicById } from "./data/aptitude/index";
 import {
   CelebrationProvider,
   useCelebrations,
@@ -86,7 +85,6 @@ const DevAnimations = import.meta.env.DEV
   ? React.lazy(() => import("./components/celebrations/DevAnimations"))
   : null;
 function Logo() {
-  const gradientId = `cc-gradient-${useId().replace(/:/g, "")}`;
   return (
     <Link
       className="brand"
@@ -94,23 +92,17 @@ function Logo() {
       aria-label="CodeCrex home"
     >
       <svg width="38" height="38" viewBox="0 0 64 64" aria-hidden="true">
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0" stopColor="#0F6FA6" />
-            <stop offset="1" stopColor="#2689C4" />
-          </linearGradient>
-        </defs>
-        <rect width="64" height="64" rx="16" fill={`url(#${gradientId})`} />
+        <rect width="64" height="64" rx="16" fill="#0A0A0A" />
         <path
           d="M33.96 23.64A13 13 0 1 0 33.96 40.36"
-          stroke="#F5EEDC"
+          stroke="#FFFFFF"
           strokeWidth="5.5"
           strokeLinecap="round"
           fill="none"
         />
         <path
           d="M49.96 23.64A13 13 0 1 0 49.96 40.36"
-          stroke="#F6C453"
+          stroke="#BDBDBD"
           strokeWidth="5.5"
           strokeLinecap="round"
           fill="none"
@@ -124,18 +116,12 @@ function Logo() {
   );
 }
 function App() {
-  const { user, authReady, dark } = useStore();
+  const { user, authReady } = useStore();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   useEffect(() => {
     return subscribeAuth();
   }, []);
-  useEffect(() => {
-    const themeName = dark ? "dark" : "light";
-    document.documentElement.dataset.theme = themeName;
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", dark ? "#0B131B" : "#F7F5F0");
-  }, [dark]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -1226,8 +1212,6 @@ function AuthPage({
 function Shell({ children }: { children: React.ReactNode }) {
   const {
     user,
-    dark,
-    theme,
     activeDays,
     toast,
     setToast,
@@ -1333,23 +1317,6 @@ function Shell({ children }: { children: React.ReactNode }) {
           >
             <Flame size={18} fill="currentColor" />
             <b><CountUp value={streak} /></b>
-          </button>
-          <button
-            onClick={theme}
-            className="icon-button theme-button"
-            aria-label={dark ? "Use light theme" : "Use dark theme"}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={dark ? "sun" : "moon"}
-                initial={{ opacity: 0, rotate: -35, scale: 0.75 }}
-                animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                exit={{ opacity: 0, rotate: 35, scale: 0.75 }}
-                transition={{ duration: 0.18 }}
-              >
-                {dark ? <Sun size={18} /> : <Moon size={18} />}
-              </motion.span>
-            </AnimatePresence>
           </button>
           <div className="user-menu">
             <Link to="/profile" className="user-profile-link" aria-label="Profile">
@@ -3100,8 +3067,12 @@ function Aptitude() {
   );
 }
 function AptitudeTopic() {
-  const { topicId } = useParams(),
-    topic = aptitudeTopics.find((t) => t.id === topicId);
+  const { topicId } = useParams();
+  const directTopic = topicId ? getAptitudeTopicById(topicId) : undefined;
+  const pathGroup = directTopic
+    ? aptitudeTopics.find((t) => t.id === directTopic.group)
+    : aptitudeTopics.find((t) => t.id === topicId);
+  const topic = pathGroup;
   const [tab, setTab] = useState<"learn" | "practice">("learn");
   if (!topic) return <NotFound />;
   return (
@@ -3109,12 +3080,18 @@ function AptitudeTopic() {
       <div className="breadcrumb">
         <Link to="/aptitude">Aptitude</Link>
         <ChevronRight size={14} />
-        <span>{topic.name}</span>
+        <Link to={`/aptitude/${topic.id}`}>{topic.name}</Link>
+        {directTopic && (
+          <>
+            <ChevronRight size={14} />
+            <span>{directTopic.title}</span>
+          </>
+        )}
       </div>
       <PageHead
         eyebrow="YOUR LEARNING PATH"
-        title={topic.name}
-        description={topic.description}
+        title={directTopic ? directTopic.title : topic.name}
+        description={directTopic ? directTopic.summary : topic.description}
       />
       <div className="tabbar">
         <button
@@ -3135,7 +3112,11 @@ function AptitudeTopic() {
         </button>
       </div>
       {tab === "learn" ? (
-        <LearnContent topic={topic} />
+        <LearnContent
+          topic={topic}
+          activeTopicId={directTopic?.id}
+          onGoToPractice={() => setTab("practice")}
+        />
       ) : (
         <div className="practice-start card">
           <div className="practice-start-icon">
@@ -3161,7 +3142,7 @@ function AptitudeTopic() {
               Step-by-step explanations
             </span>
           </div>
-          <Link to={`/test/${topic.id}`} className="btn btn-primary btn-lg">
+          <Link to={`/test/${directTopic ? directTopic.id : topic.id}`} className="btn btn-primary btn-lg">
             Start practice <ArrowRight size={16} />
           </Link>
         </div>
@@ -3178,35 +3159,45 @@ function TestEngine() {
   const record = useStore((s) => s.recordAttempt);
   const [searchParams] = useSearchParams();
   const requested = Number(searchParams.get("length")) || 15;
-  const topicIds =
-    topicId === "quantitative"
-      ? [
-          "percentages",
-          "profit-loss",
-          "time-work",
-          "time-speed-distance",
-          "ratio",
-          "probability",
-        ]
-      : topicId === "logical"
-        ? ["series", "blood-relations"]
-        : topicId === "verbal"
-          ? ["verbal"]
-          : topicId === "interview"
-            ? ["interview-etiquette"]
-            : [];
+  const directTopic = topicId ? getAptitudeTopicById(topicId) : undefined;
+  const targetGroup = directTopic ? directTopic.group : topicId;
+  const groupTopicIds: Record<string, string[]> = {
+    quantitative: [
+      "percentages",
+      "profit-loss",
+      "time-work",
+      "time-speed-distance",
+      "ratio",
+      "ratio-proportion",
+      "probability",
+      "number-system",
+      "interest",
+      "averages",
+    ],
+    logical: ["series", "blood-relations", "coding-decoding", "directions", "seating", "syllogisms"],
+    verbal: ["verbal", "reading-comprehension", "sentence-correction", "fill-in-blanks", "vocabulary"],
+    interview: ["interview-etiquette", "hr-basics", "resume-tips", "gd-basics"],
+  };
+  const topicIds = directTopic
+    ? [directTopic.id, ...(directTopic.id === "ratio-proportion" ? ["ratio"] : [])]
+    : groupTopicIds[topicId || ""] || [];
+
   const qs = useMemo(() => {
-    const pool =
+    let pool =
       topicId === "mixed"
         ? aptitudeQuestions
         : aptitudeQuestions.filter((q) => topicIds.includes(q.topicId));
+    if (pool.length === 0 && targetGroup && groupTopicIds[targetGroup]) {
+      pool = aptitudeQuestions.filter((q) => groupTopicIds[targetGroup].includes(q.topicId));
+    }
+    if (pool.length === 0) pool = aptitudeQuestions;
     return [...pool]
       .sort(() => Math.random() - 0.5)
       .slice(
         0,
         Math.min(
           topicId === "mixed" ? requested : 15,
-          aptitudeQuestions.length,
+          pool.length,
         ),
       );
   }, [topicId, requested]);
@@ -3303,7 +3294,7 @@ function TestEngine() {
         total: qs.length,
         questionIds: qs.map((question) => question.id),
         questionTimes: finalQuestionTimes,
-        topicName: topic?.name || "Mixed mock",
+        topicName: directTopic?.title || topic?.name || "Mixed mock",
       },
     });
   }
@@ -3688,6 +3679,7 @@ function Profile() {
     celebrationsEnabled,
     toggleCelebrations,
     setCelebrationsEnabled,
+    showToast,
   } = useStore(),
     [name, setName] = useState(user?.name || ""),
     [college, setCollege] = useState(user?.college || ""),
@@ -3698,9 +3690,16 @@ function Profile() {
   const activeSolved = problems.filter((p) => solved.includes(p.id)).length;
   const percent = Math.round((activeSolved / problems.length) * 100);
 
+  const handleToggleCelebrations = () => {
+    const nextState = !isCelebrationsOn;
+    toggleCelebrations();
+    showToast(nextState ? "Celebration animations enabled" : "Celebration animations disabled", "info");
+  };
+
   const handlePreviewBurst = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!isCelebrationsOn) {
       setCelebrationsEnabled(true);
+      showToast("Celebrations enabled for preview", "info");
     }
     const rect = e.currentTarget.getBoundingClientRect();
     triggerSolve({
@@ -3714,6 +3713,7 @@ function Profile() {
   const handlePreviewMedal = () => {
     if (!isCelebrationsOn) {
       setCelebrationsEnabled(true);
+      showToast("Celebrations enabled for preview", "info");
     }
     triggerMilestone(
       "Mastery Milestone",
@@ -3854,7 +3854,7 @@ function Profile() {
                 role="switch"
                 aria-checked={isCelebrationsOn}
                 className={`toggle-switch ${isCelebrationsOn ? "is-on" : "is-off"}`}
-                onClick={toggleCelebrations}
+                onClick={handleToggleCelebrations}
                 title={isCelebrationsOn ? "Disable celebration animations" : "Enable celebration animations"}
               >
                 <span className="toggle-slider" />

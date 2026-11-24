@@ -54,8 +54,8 @@ type State = {
   notes: Record<string, string>;
   activeDays: string[];
   attempts: Attempt[];
-  dark: boolean;
   celebrationsEnabled: boolean;
+  learnedTopics: string[];
 
   // Actions
   setUser: (user: UserInfo | null) => void;
@@ -65,8 +65,8 @@ type State = {
   setHasGuestDataToMigrate: (value: boolean) => void;
   clearProgress: () => void;
   toggle: (key: ProgressKey, id: string) => void;
+  toggleLearnedTopic: (id: string) => void;
   note: (id: string, value: string) => void;
-  theme: () => void;
   setCelebrationsEnabled: (enabled: boolean) => void;
   toggleCelebrations: () => void;
   markSession: () => void;
@@ -91,10 +91,8 @@ export const useStore = create<State>()(
       notes: {},
       activeDays: [],
       attempts: [],
-      dark:
-        typeof window !== "undefined" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches,
       celebrationsEnabled: true,
+      learnedTopics: [],
 
       setUser: (user) => set({ user, authReady: true }),
       setAuthReady: (authReady) => set({ authReady }),
@@ -112,8 +110,16 @@ export const useStore = create<State>()(
           notes: {},
           activeDays: [],
           attempts: [],
+          learnedTopics: [],
           hasGuestDataToMigrate: false,
         }),
+
+      toggleLearnedTopic: (id) => {
+        const list = get().learnedTopics || [];
+        const isPresent = list.includes(id);
+        const nextList = isPresent ? list.filter((x) => x !== id) : [...list, id];
+        set({ learnedTopics: nextList });
+      },
 
       toggle: (key, id) => {
         const list = get()[key];
@@ -161,8 +167,6 @@ export const useStore = create<State>()(
           saveGuestData(currentGuest);
         }
       },
-
-      theme: () => set({ dark: !get().dark }),
 
       setCelebrationsEnabled: (celebrationsEnabled: boolean) =>
         set({ celebrationsEnabled }),
@@ -327,14 +331,17 @@ export const useStore = create<State>()(
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          if ("dark" in state) {
+            delete (state as unknown as Record<string, unknown>).dark;
+          }
           if (state.celebrationsEnabled === undefined || state.celebrationsEnabled === null) {
             state.celebrationsEnabled = true;
           }
         }
       },
       partialize: (s) => ({
-        dark: s.dark,
         celebrationsEnabled: s.celebrationsEnabled !== false,
+        learnedTopics: s.learnedTopics || [],
         // Only persist user if explicitly guest; authenticated users rely on Supabase session token
         user: s.user?.guest ? s.user : null,
       }),

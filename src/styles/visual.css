@@ -4,9 +4,7 @@ html {
     background: var(--bg);
 }
 
-html,
-html[data-theme="light"],
-html[data-theme="dark"] {
+html {
     color-scheme: light;
 }
 
@@ -1095,18 +1093,21 @@ textarea:focus-visible {
 
 /* Navbar streak badge */
 .streak-button {
-  background: var(--ember) !important;
-  color: var(--on-ember) !important;
+  background: #FFFFFF !important;
+  color: #0A0A0A !important;
   border-radius: 9999px;
   padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid transparent;
+  border: 1px solid #0A0A0A !important;
 }
-.streak-button svg,
+.streak-button svg {
+  color: #0A0A0A !important;
+  fill: #0A0A0A !important;
+}
 .streak-button b {
-  color: var(--on-ember) !important;
+  color: #0A0A0A !important;
 }
 
 /* Problems solved card top-right badge */
@@ -1815,15 +1816,11 @@ textarea:focus-visible {
    ══════════════════════════════════════════════════════════════════════════════ */
 
 .streak-hero {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 12%, var(--surface)) 0%, var(--surface) 100%) !important;
-  border: 1px solid color-mix(in srgb, var(--ember) 25%, var(--border)) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   box-shadow: var(--shadow);
   padding: 24px;
   border-radius: 20px;
-}
-:root[data-theme="dark"] .streak-hero {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 15%, var(--surface)) 0%, var(--surface) 100%) !important;
-  border: 1px solid color-mix(in srgb, var(--ember) 30%, var(--border)) !important;
 }
 .streak-flame {
   background: color-mix(in srgb, var(--ember) 15%, var(--surface)) !important;

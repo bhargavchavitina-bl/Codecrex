@@ -1,692 +1,624 @@
-import { useState } from "react";
+// src/components/LearnContent.tsx
+// Comprehensive Aptitude Topic Layout for CodeCrex
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import {
-  AlertCircle,
+  Clock,
+  Printer,
   CheckCircle2,
-  ChevronDown,
-  Command,
+  XCircle,
   Lightbulb,
-  Star,
+  ChevronDown,
+  ChevronUp,
   Target,
+  ArrowRight,
+  BookOpen,
+  HelpCircle,
+  Sparkles,
 } from "lucide-react";
-import type { aptitudeTopics } from "../data/aptitude";
-type Topic = (typeof aptitudeTopics)[number];
-type Example = [string, string];
-const content: Record<
-  string,
-  {
-    idea: string;
-    formulas: string[];
-    tricks: string[];
-    examples: Example[];
-    mistakes: string[];
-    oa: string[];
-  }
-> = {
-  Percentages: {
-    idea: "A percentage expresses a part out of 100. Identify the base—the quantity that represents 100%—before calculating.",
-    formulas: [
-      "x% of y = y% of x",
-      "Successive change = a + b + ab/100",
-      "Restore after r% rise: reduce by r/(100+r) × 100%",
-    ],
-    tricks: [
-      "Use friendly fractions: 25%=1/4, 12.5%=1/8.",
-      "Use multipliers such as 1.2 and 0.8 for successive changes.",
-      "Estimate the new value before doing exact arithmetic.",
-    ],
-    examples: [
-      ["Find 18% of 250.", "10% is 25 and 8% is 20; total = 45."],
-      [
-        "A score rises from 60 to 75. Find the increase %.",
-        "Increase 15 ÷ original 60 × 100 = 25%.",
-      ],
-      [
-        "A value rises 15%, then falls 10%. Net change?",
-        "1.15 × .90 = 1.035, a 3.5% increase.",
-      ],
-      ["After a 20% discount, price is ₹960. Original?", "960 ÷ .8 = ₹1,200."],
-      [
-        "A number falls 25%. By what percent must it rise to recover?",
-        "Remaining fraction .75. Required rise = .25/.75 × 100 = 33⅓%.",
-      ],
-    ],
-    mistakes: [
-      "Adding successive percentages directly.",
-      "Using the new value as the base for percentage change.",
-      "Forgetting the direction when undoing a change.",
-    ],
-    oa: [
-      "A 20% rise followed by a 20% fall gives what net change?",
-      "A value is 40% of B. What percent of A is B?",
-      "A price rises 25%; what decrease restores the original?",
-    ],
-  },
-  "Profit & Loss": {
-    idea: "Profit and loss compare cost price and selling price. Gain or loss percentage uses cost price; a discount is taken from marked price.",
-    formulas: [
-      "Profit = SP − CP; loss = CP − SP",
-      "Profit % = profit / CP × 100",
-      "Successive discounts = a + b − ab/100",
-    ],
-    tricks: [
-      "Let CP be 100 when only percentages matter.",
-      "Apply discounts as multipliers in sequence.",
-      "Equal selling prices with equal gain and loss yield a net loss.",
-    ],
-    examples: [
-      [
-        "Cost ₹640, selling ₹800. Profit percent?",
-        "Profit ₹160; 160/640 × 100 = 25%.",
-      ],
-      [
-        "Marked price ₹2,000, discount 15%. Selling price?",
-        "Discount ₹300; selling price ₹1,700.",
-      ],
-      [
-        "₹900 item gets discounts of 10%, then 5%. Final price?",
-        "900 × .9 × .95 = ₹769.50.",
-      ],
-      [
-        "A ₹1,100 sale yields a 10% loss. Cost price?",
-        "1,100 ÷ .9 = ₹1,222.22 (approximately).",
-      ],
-      [
-        "Same selling price gives 25% gain and 25% loss. Overall?",
-        "For equal selling prices, the result is a 6.25% loss.",
-      ],
-    ],
-    mistakes: [
-      "Computing profit percent on selling price.",
-      "Applying a discount to cost price rather than marked price.",
-      "Adding two successive discount percentages.",
-    ],
-    oa: [
-      "An item costs ₹800 and sells for ₹1,000. Find gain %.",
-      "Two discounts, 20% and 10%, equal which single discount?",
-      "Why is equal selling price important in equal gain/loss questions?",
-    ],
-  },
-  "Time & Work": {
-    idea: "Convert completion times into work rates. Add rates for people working together, then convert the combined rate back into time.",
-    formulas: [
-      "Rate = 1 / time",
-      "Combined rate = sum of individual rates",
-      "Work = people × hours × days × efficiency",
-    ],
-    tricks: [
-      "Use LCM of completion times as total work units.",
-      "For an outlet or leak, subtract its rate.",
-      "Scale workers and days inversely when hours and efficiency match.",
-    ],
-    examples: [
-      [
-        "A finishes in 15 days. Fraction completed in 5 days?",
-        "Rate is 1/15 per day; in 5 days: 5/15 = 1/3.",
-      ],
-      [
-        "A takes 12 days, B 18. Together?",
-        "Rate 1/12+1/18=5/36, so time=36/5=7.2 days.",
-      ],
-      [
-        "Eight workers finish in 9 days. How long for 12 workers?",
-        "Work=72 worker-days; 72/12=6 days.",
-      ],
-      [
-        "A pipe fills in 4h; outlet empties in 12h. Both open?",
-        "Net rate=1/4−1/12=1/6; tank fills in 6 hours.",
-      ],
-      [
-        "A takes 10 days. B is twice as efficient. Together?",
-        "Rates 1/10 and 1/5; combined 3/10, so 10/3 days.",
-      ],
-    ],
-    mistakes: [
-      "Adding completion times instead of work rates.",
-      "Forgetting to subtract an outlet’s rate.",
-      "Mixing worker-days and days.",
-    ],
-    oa: [
-      "A takes 10 days, B 15. How long together?",
-      "A completes 1/3 of a job in 4 days. Find A’s full time.",
-      "How does an outlet change a filling rate?",
-    ],
-  },
-  "Time-Speed-Distance": {
-    idea: "Distance, speed and time are linked. Decide whether distance or time stays fixed, then use consistent units.",
-    formulas: [
-      "Speed = distance / time",
-      "Equal-distance average = 2xy/(x+y)",
-      "km/h to m/s: multiply by 5/18",
-    ],
-    tricks: [
-      "For equal distances, use the harmonic mean formula.",
-      "For trains meeting, add lengths and relative speeds.",
-      "Convert all units before calculating.",
-    ],
-    examples: [
-      ["Convert 90 km/h to m/s.", "90 × 5/18 = 25 m/s."],
-      ["Travel 210 km in 3.5h. Average speed?", "210 ÷ 3.5 = 60 km/h."],
-      [
-        "Equal distances at 40 and 60 km/h. Average speed?",
-        "2×40×60/(40+60)=48 km/h.",
-      ],
-      [
-        "A 180m train crosses a pole in 12s. Speed?",
-        "180/12=15 m/s = 54 km/h.",
-      ],
-      [
-        "Downstream speed 14 and upstream 8 km/h. Stream speed?",
-        "(14−8)/2 = 3 km/h.",
-      ],
-    ],
-    mistakes: [
-      "Using an arithmetic mean of speeds for equal distances.",
-      "Forgetting unit conversion.",
-      "Leaving out platform length in a train crossing.",
-    ],
-    oa: [
-      "A vehicle travels 120km in 2h. Find speed.",
-      "Two vehicles move opposite ways at 40 and 50km/h. Relative speed?",
-      "A train crosses a 200m platform. Which total distance is covered?",
-    ],
-  },
-  Ratio: {
-    idea: "A ratio compares quantities by division. Scale all parts by the same factor and use a common term when combining ratios.",
-    formulas: [
-      "a:b = c:d ⇒ ad = bc",
-      "Share = part / total parts × whole",
-      "Partnership share ∝ capital × time",
-    ],
-    tricks: [
-      "Represent the ratio as k-multiples.",
-      "Equalize the common term before combining ratios.",
-      "Check whether a relationship is direct or inverse.",
-    ],
-    examples: [
-      [
-        "Divide 96 in ratio 5:7. Larger share?",
-        "12 total parts; each=8. Larger share=7×8=56.",
-      ],
-      [
-        "If a:b=3:4 and b:c=2:5, find a:c.",
-        "Scale b to 4: ratios become 3:4 and 4:10. So 3:10.",
-      ],
-      [
-        "₹7,200 divided in ratio 2:3:4. Middle share?",
-        "9 parts; each=₹800. Middle share=₹2,400.",
-      ],
-      [
-        "A:B capital 4:5, invested 12 and 8 months. Profit ratio?",
-        "4×12:5×8 = 48:40 = 6:5.",
-      ],
-      [
-        "x varies inversely with y; x=8 when y=6. Find x when y=12.",
-        "xy stays 48; x=48/12=4.",
-      ],
-    ],
-    mistakes: [
-      "Treating ratio terms as actual quantities before finding k.",
-      "Failing to scale ratios to a common term.",
-      "Using inverse proportion as direct proportion.",
-    ],
-    oa: [
-      "Share 360 in ratio 2:7.",
-      "A:B=4:5 and B:C=10:3. Find A:C.",
-      "If 6 machines take 8 hours, how long for 12?",
-    ],
-  },
-  Probability: {
-    idea: "Probability ranges from 0 to 1. Count equally likely outcomes carefully, especially when draws happen without replacement.",
-    formulas: [
-      "P(E)=favourable outcomes / total outcomes",
-      "P(not E)=1−P(E)",
-      "Independent: P(A and B)=P(A)P(B)",
-    ],
-    tricks: [
-      "Use the complement for “at least one”.",
-      "List small sample spaces to avoid missed outcomes.",
-      "For without-replacement draws, update the denominator.",
-    ],
-    examples: [
-      [
-        "A fair die is rolled. Probability of a prime?",
-        "Prime faces 2,3,5: 3/6=1/2.",
-      ],
-      [
-        "Two coins tossed. Probability of at least one tail?",
-        "Complement of HH: 1−1/4=3/4.",
-      ],
-      [
-        "One card drawn. Probability of a king?",
-        "4 kings among 52 cards: 1/13.",
-      ],
-      [
-        "Bag has 4 red and 3 blue. Draw 2 without replacement. Both red?",
-        "4/7 × 3/6 = 2/7.",
-      ],
-      [
-        "Two dice: probability sum is 8?",
-        "Five pairs sum to 8 among 36 outcomes: 5/36.",
-      ],
-    ],
-    mistakes: [
-      "Treating dependent draws as independent.",
-      "Counting outcomes as equally likely when they are not.",
-      "Forgetting the overlap in “A or B” events.",
-    ],
-    oa: [
-      "A fair die: probability of a result greater than 4?",
-      "Two coins: probability of exactly one head?",
-      "Why does the denominator change after a draw without replacement?",
-    ],
-  },
-  Series: {
-    idea: "Look for a simple rule in differences, ratios, alternating terms, or familiar number families before extending a sequence.",
-    formulas: [
-      "Check first differences and second differences",
-      "Then check ratios and alternating positions",
-      "Compare terms with squares, cubes, and primes",
-    ],
-    tricks: [
-      "Write the gap between every pair of neighboring terms.",
-      "Split odd and even positions if the pattern alternates.",
-      "Prefer the simplest rule that fits every term.",
-    ],
-    examples: [
-      ["Next: 6, 10, 14, 18, …", "Add 4 each time; next is 22."],
-      ["Next: 2, 6, 18, 54, …", "Multiply by 3 each time; next is 162."],
-      ["Next: 1, 4, 9, 16, …", "Squares; next is 25."],
-      [
-        "Next: 3, 5, 8, 12, 17, …",
-        "Differences +2,+3,+4,+5; next +6 gives 23.",
-      ],
-      [
-        "Next: 2, 3, 5, 8, 13, …",
-        "Each term sums the previous two; next is 21.",
-      ],
-    ],
-    mistakes: [
-      "Assuming every series is arithmetic.",
-      "Missing a second alternating pattern.",
-      "Choosing a complicated rule when a simpler one fits.",
-    ],
-    oa: [
-      "Complete 4, 9, 14, 19, …",
-      "Find the next term: 3, 6, 12, 24, …",
-      "What should you test after first differences fail?",
-    ],
-  },
-  "Blood Relations": {
-    idea: "Translate each relationship from the speaker’s point of view. A small family tree prevents reversals and hidden gender assumptions.",
-    formulas: [
-      "Map one relationship at a time",
-      "Track generations: parent +1, child −1",
-      "Use gender only when a clue states it",
-    ],
-    tricks: [
-      "Draw a tiny tree and label each person.",
-      "Anchor “my” or “his/her” before following the chain.",
-      "Restate the final relationship from the person asked about.",
-    ],
-    examples: [
-      [
-        "Mira is Ravi’s sister. Ravi is Tara’s father. Relation?",
-        "Mira is Tara’s aunt.",
-      ],
-      ["N is P’s son. P is Q’s daughter. N to Q?", "N is Q’s grandson."],
-      [
-        "A is B’s brother. B is C’s mother. A to C?",
-        "A is C’s maternal uncle.",
-      ],
-      ["R is S’s father. S is T’s sister. R to T?", "R is T’s father."],
-      ["K is L’s mother. L and M are siblings. K to M?", "K is M’s mother."],
-    ],
-    mistakes: [
-      "Assuming gender when it is not stated.",
-      "Reversing the viewpoint of the relationship.",
-      "Skipping a generation in a multi-link chain.",
-    ],
-    oa: [
-      "A is B’s sister; B is C’s father. How is A related to C?",
-      "P is Q’s son; Q is R’s daughter. P to R?",
-      "Which clues do you need before naming a brother or sister?",
-    ],
-  },
-  "Self-Introduction & HR Basics": {
-    idea: "A fresher introduction should connect your degree, strongest evidence, and target role in about a minute. Keep the answer specific and natural, not memorized.",
-    formulas: [
-      "Present: degree + focus",
-      "Proof: project or measurable result",
-      "Next: why this role fits",
-    ],
-    tricks: [
-      "Lead with the detail most relevant to this role.",
-      "Use one concrete example for each claimed strength.",
-      "Practice aloud, then keep the wording conversational.",
-    ],
-    examples: [
-      [
-        "How do I answer ‘Tell me about yourself’?",
-        "I’m a final-year CSE student focused on frontend engineering. I built a campus events app in React, where I improved the search flow after testing it with classmates. I’m looking for a role where I can keep building accessible products.",
-      ],
-      [
-        "How can I explain a strength?",
-        "Name the strength, give a short example, and state the result: ‘I’m organized; I planned a four-person project in weekly milestones, which helped us deliver the demo on time.’",
-      ],
-      [
-        "How should I discuss a weakness?",
-        "Choose a real, manageable skill and explain what you are doing about it. Avoid presenting a disguised strength or a trait critical to the role.",
-      ],
-      [
-        "How do I answer ‘Why this company’?",
-        "Connect one verified detail about the company’s work to your own interests, then explain the contribution you hope to make.",
-      ],
-      [
-        "What if I do not know an interview answer?",
-        "Say what you do know, explain your reasoning, and ask a clarifying question if needed. Do not bluff.",
-      ],
-    ],
-    mistakes: [
-      "Reciting personal details unrelated to the role.",
-      "Claiming skills without examples.",
-      "Giving a scripted answer that sounds unnatural.",
-    ],
-    oa: [
-      "Give a 45-second introduction tailored to a frontend role.",
-      "Describe a time you changed your approach after feedback.",
-      "Name one specific reason this role matches your current skills.",
-    ],
-  },
-  "Resume & Profile Tips": {
-    idea: "A fresher resume makes relevant evidence easy to scan: education, skills, projects, experience, and links. Strong project bullets explain what you built and what changed because of it.",
-    formulas: [
-      "Action verb + what you built + tools + result",
-      "One page is a useful target for most fresher resumes",
-      "Use consistent dates, headings, and spacing",
-    ],
-    tricks: [
-      "Quantify users, latency, coverage, or scope when you can verify the number.",
-      "Put the most role-relevant project first.",
-      "Use simple formatting that parses cleanly in applicant tracking systems.",
-    ],
-    examples: [
-      [
-        "Improve ‘Made a website in React.’",
-        "‘Built a React event portal with searchable listings and a responsive registration flow.’ Add a verified metric only if you measured it.",
-      ],
-      [
-        "What belongs in a project entry?",
-        "Project name, one-line purpose, your contribution, the stack, and two concise outcome-focused bullets.",
-      ],
-      [
-        "How should skills be listed?",
-        "Group skills you can discuss confidently; keep the list aligned with the role and your actual experience.",
-      ],
-      [
-        "What makes a GitHub link useful?",
-        "A working repository with a clear README, setup steps, screenshots where useful, and meaningful commit history.",
-      ],
-      [
-        "How do I check ATS readability?",
-        "Copy the exported PDF text into a plain-text editor and confirm that headings and dates appear in the expected order.",
-      ],
-    ],
-    mistakes: [
-      "Adding unverified impact numbers.",
-      "Listing tools you cannot explain.",
-      "Using decorative columns or graphics that scramble reading order.",
-    ],
-    oa: [
-      "Rewrite one project bullet using action, scope, and result.",
-      "Which two projects best support your target role?",
-      "What should you verify before sharing your profile link?",
-    ],
-  },
-  "Group Discussion Basics": {
-    idea: "A group discussion rewards clear reasoning, listening, and useful collaboration. Contribute relevant points, build on others’ ideas, and make room for different voices.",
-    formulas: [
-      "Point → reason → example",
-      "Acknowledge → add evidence → connect",
-      "Opening: define the scope; closing: summarize shared ground",
-    ],
-    tricks: [
-      "Take a breath and enter when you have a distinct point.",
-      "Refer to an earlier speaker’s idea to show active listening.",
-      "If the group stalls, offer a simple structure or comparison.",
-    ],
-    examples: [
-      [
-        "How can I open a discussion?",
-        "Briefly define the issue and suggest two angles to examine, without claiming the only valid framing.",
-      ],
-      [
-        "How do I disagree constructively?",
-        "Acknowledge the point, state your concern, then support it with a reason or example.",
-      ],
-      [
-        "What if I have not spoken yet?",
-        "Listen for a gap or unanswered question, then contribute one concise point connected to the discussion.",
-      ],
-      [
-        "How can I bring a quiet group forward?",
-        "Invite a new angle with an open question rather than putting an individual on the spot.",
-      ],
-      [
-        "How should a closing summary sound?",
-        "Recap the main themes, note any trade-offs, and avoid claiming consensus when it was not reached.",
-      ],
-    ],
-    mistakes: [
-      "Interrupting or repeating an earlier point.",
-      "Treating volume as confidence.",
-      "Speaking only to score points instead of advancing the discussion.",
-    ],
-    oa: [
-      "Give one reasoned point on a topic you have researched.",
-      "How would you respectfully challenge an unsupported claim?",
-      "Summarize two sides of a debate in under 30 seconds.",
-    ],
-  },
-  "Online Assessment Patterns": {
-    idea: "Campus assessments can combine aptitude, reasoning, verbal, and coding sections. Formats and cutoffs vary by role, cohort, and hiring cycle, so use this as general preparation rather than a company guarantee.",
-    formulas: [
-      "Read the current official careers instructions first",
-      "Budget time by marks and question difficulty",
-      "Verify the latest pattern on the company’s official careers page",
-    ],
-    tricks: [
-      "Practice a timed mixed set to build section-switching stamina.",
-      "Check permitted tools, browser requirements, and test environment in advance.",
-      "Keep an error log and revisit the topic behind each mistake.",
-    ],
-    examples: [
-      [
-        "How should I prepare if a test has several sections?",
-        "Practice each skill separately, then combine them in timed sets while tracking accuracy and time.",
-      ],
-      [
-        "Can I assume a named company always uses one test pattern?",
-        "No. Use company names as examples only and verify current instructions on its official careers page.",
-      ],
-      [
-        "How do I handle a difficult timed question?",
-        "Set a time limit, mark it for return, and protect time for questions you can solve confidently.",
-      ],
-      [
-        "What should I check before a remote assessment?",
-        "Confirm the official link, device and browser requirements, time zone, permitted resources, and a reliable connection.",
-      ],
-      [
-        "How do I review a mock test?",
-        "Separate concept errors, misreads, arithmetic slips, and time-pressure errors; choose one correction to practice next.",
-      ],
-    ],
-    mistakes: [
-      "Treating old online patterns as current facts.",
-      "Spending too long on one hard item.",
-      "Reviewing only the score instead of the underlying errors.",
-    ],
-    oa: [
-      "Build a 30-minute practice plan across three skills.",
-      "Where should you verify a current company assessment format?",
-      "Which error type would you track after a mock test?",
-    ],
-  },
-};
-export default function LearnContent({ topic }: { topic: Topic }) {
-  const names = Object.keys(content),
-    [unit, setUnit] = useState(
-      names.find((n) => topic.units.includes(n)) || topic.units[0],
-    ),
-    isScaffold = !content[unit],
-    data = content[unit] || {
-      idea: `Build a repeatable method for ${unit.toLowerCase()}. Identify what is given, choose a rule, and check whether the result satisfies the conditions.`,
-      formulas: [
-        "Identify the known values",
-        "Write the relationship before calculating",
-        "Check units and boundary cases",
-      ],
-      tricks: [
-        "Estimate before calculating",
-        "Keep each condition visible",
-        "Check your result in reverse",
-      ],
-      examples: Array.from({ length: 5 }, (_, i) => [
-        `Practice ${unit.toLowerCase()} example ${i + 1}`,
-        "Start by listing the conditions and work through them one at a time.",
-      ]),
-      mistakes: [
-        "Skipping a condition",
-        "Using the wrong relationship",
-        "Rounding too early",
-      ],
-      oa: [
-        "Explain your setup before calculating.",
-        "Which condition changes the method?",
-        "Check your result against the original question.",
-      ],
-    };
+import { useStore } from "../store";
+import {
+  allAptitudeTopics,
+  getAptitudeTopicById,
+  type Formula,
+} from "../data/aptitude/index";
+import { aptitudeTopics as aptitudePathGroups } from "../data/aptitude";
+
+// Math helper components
+export function Frac({ n, d }: { n: React.ReactNode; d: React.ReactNode }) {
   return (
-    <div className="learn-layout">
-      <aside className="learn-nav">
-        <b>IN THIS PATH</b>
-        {topic.units.map((u, i) => (
-          <button
-            key={u}
-            onClick={() => setUnit(u)}
-            className={unit === u ? "learn-unit-active" : ""}
-          >
-            <span>{String(i + 1).padStart(2, "0")}</span>
-            {u}
-          </button>
-        ))}
-      </aside>
-      <div className="learn-main">
-        <section className="learn-intro card">
-          {isScaffold && (
-            <span className="scaffold-label">
-              TODO · LESSON CONTENT TO BE ADDED
-            </span>
-          )}
-          <span className="learn-tag">
-            <Lightbulb size={14} /> THE IDEA
+    <span className="inline-flex flex-col text-center align-middle mx-1 text-xs font-mono font-medium leading-none">
+      <span className="border-b border-current pb-0.5 px-1">{n}</span>
+      <span className="pt-0.5 px-1">{d}</span>
+    </span>
+  );
+}
+
+export function Sup({ children }: { children: React.ReactNode }) {
+  return <sup className="text-[0.75em] font-mono leading-none align-super">{children}</sup>;
+}
+
+export function Sqrt({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center font-mono">
+      <span>√</span>
+      <span className="border-t border-current px-0.5">{children}</span>
+    </span>
+  );
+}
+
+// Format formula expression with helper math rendering where applicable
+function renderFormulaExpression(expr: string) {
+  return <code className="text-sm md:text-base font-mono font-semibold tracking-tight text-ink">{expr}</code>;
+}
+
+interface LearnContentProps {
+  topic?: (typeof aptitudePathGroups)[number];
+  activeTopicId?: string;
+  onSelectTopic?: (id: string) => void;
+  onGoToPractice?: () => void;
+}
+
+export default function LearnContent({
+  topic: pathGroup,
+  activeTopicId,
+  onSelectTopic,
+  onGoToPractice,
+}: LearnContentProps) {
+  // Determine current active topic
+  const group = pathGroup?.id || "quantitative";
+  const groupTopics = allAptitudeTopics.filter((t) => t.group === group);
+  const initialTopic =
+    (activeTopicId && getAptitudeTopicById(activeTopicId)) ||
+    (groupTopics.length > 0 ? groupTopics[0] : allAptitudeTopics[0]);
+
+  const [currentTopicId, setCurrentTopicId] = useState<string>(initialTopic.id);
+  const currentTopic = getAptitudeTopicById(currentTopicId) || initialTopic;
+
+  // Store persistence for learned topics
+  const learnedTopics = useStore((s) => s.learnedTopics) || [];
+  const toggleLearnedTopic = useStore((s) => s.toggleLearnedTopic);
+  const isLearned = learnedTopics.includes(currentTopic.id);
+
+  // Collapsed state for worked examples
+  const [openExamples, setOpenExamples] = useState<Record<number, boolean>>({});
+  const toggleExample = (idx: number) => {
+    setOpenExamples((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  // Etiquette quiz state (for hr-basics)
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+
+  const handleSelectUnit = (topicId: string) => {
+    setCurrentTopicId(topicId);
+    setOpenExamples({});
+    if (onSelectTopic) onSelectTopic(topicId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Formula section title based on topic group
+  const getFormulaSectionTitle = () => {
+    switch (currentTopic.group) {
+      case "logical":
+        return "Methods & rules";
+      case "verbal":
+        return "Rules & principles";
+      case "interview":
+        return "Frameworks & strategies";
+      default:
+        return "Formulas & methods";
+    }
+  };
+
+  const difficultySymbol = (level: string) => {
+    switch (level) {
+      case "Easy":
+        return "○ Easy";
+      case "Hard":
+        return "● Hard";
+      default:
+        return "◐ Medium";
+    }
+  };
+
+  return (
+    <div className="learn-container flex flex-col lg:flex-row gap-8 items-start w-full">
+      {/* Sidebar: In this path */}
+      <aside className="learn-sidebar w-full lg:w-72 shrink-0 bg-surface border border-border rounded-2xl p-4 shadow-sm print:hidden">
+        <div className="text-xs uppercase font-semibold tracking-wider text-muted mb-3 px-2 flex items-center justify-between">
+          <span>IN THIS PATH</span>
+          <span className="font-mono text-[11px] text-ink-2">
+            {groupTopics.filter((t) => learnedTopics.includes(t.id)).length}/{groupTopics.length} learned
           </span>
-          <h2>{unit}: a method you can reuse.</h2>
-          <p>{data.idea}</p>
-        </section>
-        <section className="learn-section card">
-          <div className="learn-section-title">
-            <div className="section-icon formula-icon">
-              <Command size={17} />
+        </div>
+        <nav className="flex flex-col gap-1 max-h-[75vh] overflow-y-auto pr-1">
+          {groupTopics.map((t, idx) => {
+            const active = t.id === currentTopic.id;
+            const learned = learnedTopics.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                onClick={() => handleSelectUnit(t.id)}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium transition-all ${
+                  active
+                    ? "bg-accent text-on-accent shadow-[2px_2px_0px_#0A0A0A]"
+                    : "text-ink-2 hover:bg-surface-2"
+                }`}
+              >
+                <span
+                  className={`font-mono text-xs w-5 text-right ${
+                    active ? "text-on-accent" : "text-muted"
+                  }`}
+                >
+                  {String(idx + 1).padStart(2, "0")}
+                </span>
+                <span className="truncate flex-1">{t.title}</span>
+                {learned && (
+                  <CheckCircle2
+                    size={14}
+                    className={active ? "text-on-accent" : "text-ink"}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content Column */}
+      <main className="learn-content-main flex-1 min-w-0 flex flex-col gap-8 w-full">
+        {/* Header Block */}
+        <header className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
+              <span>Aptitude</span>
+              <span>/</span>
+              <span className="capitalize">{currentTopic.group}</span>
+              <span>/</span>
+              <span className="text-ink">{currentTopic.title}</span>
             </div>
-            <div>
-              <h3>Formula & method sheet</h3>
-              <p>Start with the relationship that matches the question.</p>
+            <button
+              onClick={() => window.print()}
+              className="print-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg text-ink hover:bg-surface-2 transition-colors print:hidden"
+            >
+              <Printer size={14} />
+              Print cheat sheet
+            </button>
+          </div>
+
+          <div>
+            <h1 className="text-2xl md:text-3xl font-serif text-ink tracking-tight mb-2">
+              {currentTopic.title}
+            </h1>
+            <p className="text-sm md:text-base text-ink-2 leading-relaxed">
+              {currentTopic.summary}
+            </p>
+          </div>
+
+          {/* Meta / Context Strip */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-border">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-2 text-ink border border-border">
+              <Clock size={13} className="text-muted" />
+              <span>{currentTopic.context.targetTimePerQuestion}</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-2 text-ink border border-border">
+              <span>{difficultySymbol(currentTopic.context.difficultyLevel)}</span>
+            </div>
+            {currentTopic.context.prerequisites.map((prereq) => (
+              <span
+                key={prereq}
+                className="px-2.5 py-1 rounded-full text-xs font-mono text-muted bg-surface-3 border border-border"
+              >
+                {prereq}
+              </span>
+            ))}
+            <label className="ml-auto inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-ink select-none px-3 py-1 bg-surface-2 rounded-full border border-border hover:bg-surface-3 transition-colors print:hidden">
+              <input
+                type="checkbox"
+                checked={isLearned}
+                onChange={() => toggleLearnedTopic(currentTopic.id)}
+                className="w-4 h-4 rounded border-border-strong text-accent focus:ring-accent accent-accent cursor-pointer"
+              />
+              <span>{isLearned ? "Marked as learned" : "Mark as learned"}</span>
+            </label>
+          </div>
+        </header>
+
+        {/* Sticky Pill Bar Navigation */}
+        <nav className="sticky top-16 z-20 bg-surface/95 backdrop-blur-md border border-border rounded-xl p-1.5 shadow-sm flex items-center gap-1 overflow-x-auto print:hidden">
+          <a href="#context" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            Context
+          </a>
+          <a href="#concepts" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            Concepts
+          </a>
+          <a href="#formulas" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            {currentTopic.group === "interview" ? "Frameworks" : currentTopic.group === "logical" ? "Methods" : "Formulas"}
+          </a>
+          {currentTopic.referenceTables && currentTopic.referenceTables.length > 0 && (
+            <a href="#tables" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+              Tables
+            </a>
+          )}
+          <a href="#shortcuts-traps" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            Shortcuts & Traps
+          </a>
+          <a href="#examples" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            Worked Examples
+          </a>
+          <a href="#oa-questions" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            OA Questions
+          </a>
+          <a href="#remember" className="px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 rounded-lg shrink-0">
+            Remember
+          </a>
+          {onGoToPractice && (
+            <button
+              onClick={onGoToPractice}
+              className="ml-auto px-3 py-1.5 text-xs font-medium bg-accent text-on-accent rounded-lg shrink-0 flex items-center gap-1 hover:bg-accent-hover transition-colors"
+            >
+              <Target size={13} />
+              Practice test
+            </button>
+          )}
+        </nav>
+
+        {/* 1. Context Section */}
+        <section id="context" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-sm scroll-mt-32">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+            <Lightbulb size={16} />
+            <span>CONTEXT & APPLICATION</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-sm font-semibold text-ink">Why it matters</h3>
+              <p className="text-sm text-ink-2 leading-relaxed">{currentTopic.context.whyItMatters}</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-sm font-semibold text-ink">Where it appears</h3>
+              <p className="text-sm text-ink-2 leading-relaxed">{currentTopic.context.whereItAppears}</p>
             </div>
           </div>
-          <div className="formula-grid">
-            {data.formulas.map((f, i) => (
-              <div className="formula-chip" key={f}>
-                <span>0{i + 1}</span>
-                <code>{f}</code>
+        </section>
+
+        {/* 2. Key Concepts Section */}
+        <section id="concepts" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-sm scroll-mt-32">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+            <BookOpen size={16} />
+            <span>KEY CONCEPTS ({currentTopic.keyConcepts.length})</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {currentTopic.keyConcepts.map((kc, i) => (
+              <div key={i} className="p-4 bg-surface-2 border border-border rounded-xl flex flex-col gap-1.5">
+                <span className="font-semibold text-sm text-ink">{kc.term}</span>
+                <p className="text-xs md:text-sm text-ink-2 leading-relaxed">{kc.definition}</p>
               </div>
             ))}
           </div>
         </section>
-        <section className="learn-section card">
-          <div className="learn-section-title">
-            <div className="section-icon trick-icon">
-              <Star size={17} />
+
+        {/* 3. Formulas / Methods & Rules / Frameworks Section */}
+        <section id="formulas" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-sm scroll-mt-32">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+            <Target size={16} />
+            <span>{getFormulaSectionTitle().toUpperCase()} ({currentTopic.formulas.length})</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4">
+            {currentTopic.formulas.map((f: Formula, i: number) => (
+              <div key={i} className="p-4 bg-surface-2 border border-border rounded-xl flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-mono font-medium text-muted">0{i + 1}</span>
+                  <span className="font-semibold text-sm text-ink flex-1">{f.label}</span>
+                </div>
+                <div className="p-3 bg-surface border border-border rounded-lg overflow-x-auto">
+                  {renderFormulaExpression(f.expression)}
+                </div>
+                <div className="text-xs text-ink-2">
+                  <span className="font-medium text-muted">When to use: </span>
+                  {f.whenToUse}
+                </div>
+                {f.example && (
+                  <div className="text-xs text-muted italic bg-surface-3 p-2 rounded-md">
+                    <span className="font-medium text-ink-2 not-italic">Example: </span>
+                    {f.example}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 4. Reference Tables Section (if present) */}
+        {currentTopic.referenceTables && currentTopic.referenceTables.length > 0 && (
+          <section id="tables" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-sm scroll-mt-32">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              <span>REFERENCE TABLES</span>
             </div>
-            <div>
-              <h3>Shortcuts & common traps</h3>
-              <p>Use a shortcut only after the setup is clear.</p>
+            {currentTopic.referenceTables.map((tbl, idx) => (
+              <div key={idx} className="flex flex-col gap-2">
+                <h4 className="text-sm font-semibold text-ink">{tbl.title}</h4>
+                <div className="overflow-x-auto border border-border rounded-xl">
+                  <table className="w-full text-left text-xs md:text-sm">
+                    <thead className="bg-surface-2 border-b border-border text-muted font-mono uppercase text-[11px]">
+                      <tr>
+                        {tbl.headers.map((h, i) => (
+                          <th key={i} className="p-3">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {tbl.rows.map((row, rIdx) => (
+                        <tr key={rIdx} className="hover:bg-surface-2/60 transition-colors">
+                          {row.map((cell, cIdx) => (
+                            <td key={cIdx} className="p-3 font-mono text-ink-2">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* 5. Shortcuts & Common Traps */}
+        <section id="shortcuts-traps" className="grid grid-cols-1 md:grid-cols-2 gap-6 scroll-mt-32">
+          {/* Shortcuts column */}
+          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              <CheckCircle2 size={16} className="text-ink" />
+              <span>SHORTCUTS ({currentTopic.shortcuts.length})</span>
+            </div>
+            <div className="flex flex-col gap-4">
+              {currentTopic.shortcuts.map((sc, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 shrink-0 pt-0.5 text-ink">
+                    <CheckCircle2 size={18} />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-semibold text-ink">{sc.trick}</span>
+                    <p className="text-xs text-ink-2 leading-relaxed">{sc.whenItWorks}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <ul className="check-list">
-            {data.tricks.map((m, i) => (
-              <li key={m}>
-                {i === 0 ? (
-                  <CheckCircle2 size={16} />
-                ) : (
-                  <AlertCircle size={16} />
-                )}{" "}
-                {m}
+
+          {/* Common Traps column */}
+          <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              <XCircle size={16} className="text-ink" />
+              <span>COMMON TRAPS ({currentTopic.commonTraps.length})</span>
+            </div>
+            <div className="flex flex-col gap-4">
+              {currentTopic.commonTraps.map((tr, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-5 shrink-0 pt-0.5 text-ink">
+                    <XCircle size={18} />
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-semibold text-ink">{tr.mistake}</span>
+                    <p className="text-xs text-ink-2 leading-relaxed">
+                      <span className="font-medium text-muted">Fix: </span>
+                      {tr.fix}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 6. Worked Examples */}
+        <section id="examples" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-sm scroll-mt-32">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              <BookOpen size={16} />
+              <span>FIVE WORKED EXAMPLES (EASY → HARD)</span>
+            </div>
+            <span className="text-xs text-muted">Try solving first</span>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {currentTopic.workedExamples.map((ex, i) => {
+              const isOpen = openExamples[i];
+              return (
+                <div key={i} className="border border-border rounded-xl overflow-hidden bg-surface-2 transition-all">
+                  <button
+                    onClick={() => toggleExample(i)}
+                    className="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-surface-3/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="font-mono text-xs font-medium text-muted mt-0.5">0{i + 1}</span>
+                      <span className="text-sm font-semibold text-ink leading-snug">{ex.question}</span>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2 text-xs font-medium text-muted">
+                      <span>{isOpen ? "Hide solution" : "Show solution"}</span>
+                      {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="p-4 pt-2 border-t border-border bg-surface flex flex-col gap-3 text-sm">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-xs uppercase font-mono tracking-wider text-muted">Solution steps:</span>
+                        <ol className="list-decimal list-inside space-y-1 text-xs md:text-sm text-ink-2 pl-1">
+                          {ex.steps.map((st, sIdx) => (
+                            <li key={sIdx} className="leading-relaxed">
+                              {st}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                      <div className="p-2.5 bg-surface-2 border border-border rounded-lg inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-ink">
+                        <span className="text-muted font-normal">Answer:</span>
+                        <span>{ex.answer}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 7. OA Examples */}
+        <section id="oa-questions" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-sm scroll-mt-32">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+            <Target size={16} />
+            <span>ONLINE ASSESSMENT (OA) EXAMPLES</span>
+          </div>
+          <div className="flex flex-col gap-4">
+            {currentTopic.oaExamples.map((oa, i) => (
+              <div key={i} className="p-4 bg-surface-2 border border-border rounded-xl flex flex-col gap-2">
+                <div className="flex items-start gap-2.5">
+                  <span className="font-mono text-xs font-medium text-muted mt-0.5">OA-0{i + 1}</span>
+                  <span className="text-sm font-semibold text-ink">{oa.question}</span>
+                </div>
+                <div className="pl-8 flex flex-col gap-1.5 text-xs text-ink-2">
+                  <ul className="list-disc list-inside space-y-0.5">
+                    {oa.steps.map((s, sIdx) => (
+                      <li key={sIdx}>{s}</li>
+                    ))}
+                  </ul>
+                  <div className="font-semibold text-ink mt-1">
+                    <span className="text-muted font-normal">Result: </span>
+                    {oa.answer}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 8. "Remember This" Inverse Card */}
+        <section id="remember" className="bg-[#0A0A0A] text-white border border-[#0A0A0A] rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-md scroll-mt-32">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#BDBDBD]">
+            <Sparkles size={16} className="text-white" />
+            <span>REMEMBER THIS · HIGH-YIELD TAKEAWAYS</span>
+          </div>
+          <ul className="flex flex-col gap-2.5 text-sm md:text-base text-white/90">
+            {currentTopic.rememberThis.map((bullet, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="text-[#BDBDBD] font-mono select-none">▸</span>
+                <span className="leading-relaxed">{bullet}</span>
               </li>
             ))}
           </ul>
-          <ul className="mistake-list">
-            {data.mistakes.map((m) => (
-              <li key={m}>
-                <AlertCircle size={15} />
-                {m}
-              </li>
-            ))}
-          </ul>
         </section>
-        <section className="learn-section card">
-          <div className="learn-section-title">
-            <div className="section-icon example-icon">
-              <Target size={17} />
+
+        {/* Special Etiquette Quiz (for hr-basics) */}
+        {currentTopic.etiquetteQuiz && currentTopic.etiquetteQuiz.length > 0 && (
+          <section id="etiquette-quiz" className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              <HelpCircle size={16} />
+              <span>INTERACTIVE HR ETIQUETTE QUIZ (5 QUESTIONS)</span>
             </div>
+            <div className="flex flex-col gap-6">
+              {currentTopic.etiquetteQuiz.map((q, qIdx) => {
+                const selected = quizAnswers[qIdx];
+                const isAnswered = selected !== undefined;
+                return (
+                  <div key={qIdx} className="p-5 bg-surface-2 border border-border rounded-xl flex flex-col gap-3">
+                    <span className="font-semibold text-sm text-ink">
+                      {qIdx + 1}. {q.question}
+                    </span>
+                    <div className="grid grid-cols-1 gap-2">
+                      {q.options.map((opt, optIdx) => {
+                        const isChosen = selected === optIdx;
+                        let btnStyle = "border-border hover:bg-surface-3";
+                        if (isAnswered) {
+                          if (optIdx === q.correctIndex) {
+                            btnStyle = "bg-accent text-on-accent border-accent font-semibold";
+                          } else if (isChosen) {
+                            btnStyle = "border-dashed border-border-strong bg-surface text-muted";
+                          }
+                        }
+                        return (
+                          <button
+                            key={optIdx}
+                            disabled={isAnswered}
+                            onClick={() => setQuizAnswers((prev) => ({ ...prev, [qIdx]: optIdx }))}
+                            className={`p-3 text-left text-xs md:text-sm rounded-lg border transition-all flex items-center justify-between ${btnStyle}`}
+                          >
+                            <span>{opt}</span>
+                            {isAnswered && optIdx === q.correctIndex && (
+                              <span className="text-xs uppercase font-mono tracking-wider ml-2 shrink-0">✓ Correct</span>
+                            )}
+                            {isAnswered && isChosen && optIdx !== q.correctIndex && (
+                              <span className="text-xs uppercase font-mono tracking-wider ml-2 shrink-0">✕ Incorrect</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {isAnswered && (
+                      <div className="p-3 bg-surface border border-border rounded-lg text-xs text-ink-2 leading-relaxed">
+                        <span className="font-semibold text-ink">Explanation: </span>
+                        {q.explanation}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 9. Next Steps / Related Topics */}
+        <section className="bg-surface border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-sm print:hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h3>Five worked examples</h3>
-              <p>Try the setup before opening each solution.</p>
+              <h3 className="text-base font-semibold text-ink">Ready to test what you learned?</h3>
+              <p className="text-xs md:text-sm text-muted">
+                Practice 15 multiple choice questions on {currentTopic.title} under timed conditions.
+              </p>
             </div>
+            {onGoToPractice ? (
+              <button
+                onClick={onGoToPractice}
+                className="px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
+              >
+                <span>Practice test</span>
+                <ArrowRight size={16} />
+              </button>
+            ) : (
+              <Link
+                to={`/test/${currentTopic.group}`}
+                className="px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
+              >
+                <span>Practice test</span>
+                <ArrowRight size={16} />
+              </Link>
+            )}
           </div>
-          <div className="example-list">
-            {data.examples.map(([q, a], i) => (
-              <details className="example-item" key={q}>
-                <summary>
-                  <span className="example-number">0{i + 1}</span>
-                  <b>{q}</b>
-                  <ChevronDown size={16} />
-                </summary>
-                <p>{a}</p>
-              </details>
-            ))}
-          </div>
+
+          {currentTopic.relatedTopics && currentTopic.relatedTopics.length > 0 && (
+            <div className="pt-4 border-t border-border flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-muted uppercase tracking-wider">Related topics:</span>
+              {currentTopic.relatedTopics.map((relId) => {
+                const rel = getAptitudeTopicById(relId);
+                if (!rel) return null;
+                return (
+                  <button
+                    key={relId}
+                    onClick={() => handleSelectUnit(relId)}
+                    className="px-3 py-1 text-xs font-medium bg-surface-2 text-ink border border-border rounded-lg hover:bg-surface-3 transition-colors"
+                  >
+                    {rel.title}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </section>
-        <section className="learn-section card">
-          <div className="learn-section-title">
-            <div className="section-icon formula-icon">
-              <Target size={17} />
-            </div>
-            <div>
-              <h3>OA-style quick checks</h3>
-              <p>Short prompts to apply the same ideas under time pressure.</p>
-            </div>
-          </div>
-          <ol className="oa-list">
-            {data.oa.map((q, i) => (
-              <li key={q}>
-                <span>0{i + 1}</span>
-                {q}
-              </li>
-            ))}
-          </ol>
-        </section>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
@@ -13,11 +12,15 @@ export default {
         ink2: 'var(--ink-2)',
         muted: 'var(--muted)',
         border: 'var(--border)',
+        borderStrong: 'var(--border-strong)',
         accent: 'var(--accent)',
         accentHover: 'var(--accent-hover)',
         onAccent: 'var(--on-accent)',
         accentText: 'var(--accent-text)',
         accentSoft: 'var(--accent-soft)',
+        inverseBg: 'var(--inverse-bg)',
+        inverseInk: 'var(--inverse-ink)',
+        inverseMuted: 'var(--inverse-muted)',
         ember: 'var(--ember)',
         onEmber: 'var(--on-ember)',
         success: 'var(--success)',
@@ -25,9 +28,11 @@ export default {
         successText: 'var(--success-text)',
         successSoft: 'var(--success-soft)',
         warning: 'var(--warning)',
+        onWarning: 'var(--on-warning)',
         warningText: 'var(--warning-text)',
         warningSoft: 'var(--warning-soft)',
         danger: 'var(--danger)',
+        onDanger: 'var(--on-danger)',
         dangerText: 'var(--danger-text)',
         dangerSoft: 'var(--danger-soft)',
       },

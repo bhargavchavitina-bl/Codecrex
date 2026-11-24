@@ -7,11 +7,11 @@ export interface BurstPoint {
 }
 
 const COLORS = [
-  "#0274B6", // azure sky blue
-  "#38BDF8", // bright sky
+  "#0A0A0A", // deep black
+  "#262626", // charcoal
+  "#737373", // neutral gray
+  "#BDBDBD", // light gray
   "#FFFFFF", // crisp white
-  "#F59E0B", // warm gold
-  "#E8892B", // ember flame
 ];
 
 interface SolveBurstProps {

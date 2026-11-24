@@ -34,6 +34,13 @@ The database structure is defined in [`supabase/schema.sql`](./supabase/schema.s
 
 ### 6. Validation Scripts
 Before committing or completing tasks:
+- `npm run check:contrast`: WCAG AA (>= 4.5:1) contrast ratio audit for design tokens.
+- `npm run check:data`: Problem and topic catalog integrity check.
+- `npm run check:aptitude`: Comprehensive aptitude lesson, formula, and example validation.
 - `npm run typecheck`: TypeScript typecheck without emitting output.
 - `npm run lint`: ESLint verification.
 - `npm run build`: Production bundle verification.
+
+### 7. Theme & Visual Design
+- **Light mode only**: CodeCrex is strictly light mode only. There is no dark mode toggle, no dark state in store, and no dark token block. The OS dark setting has no effect.
+- **Monochrome Black-and-White Theme**: Strictly monochrome design tokens defined in `src/styles/tokens.css` with WCAG AA (>= 4.5:1) compliance for all token pairs. Status indicators use explicit shapes and text rather than color alone.
