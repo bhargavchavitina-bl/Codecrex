@@ -142,7 +142,7 @@ export default function LearnContent({
                 onClick={() => handleSelectUnit(t.id)}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium transition-all ${
                   active
-                    ? "bg-accent text-on-accent shadow-[2px_2px_0px_#0A0A0A]"
+                    ? "surface-inverse bg-accent text-on-accent shadow-[2px_2px_0px_#0A0A0A]"
                     : "text-ink-2 hover:bg-surface-2"
                 }`}
               >
@@ -256,7 +256,7 @@ export default function LearnContent({
           {onGoToPractice && (
             <button
               onClick={onGoToPractice}
-              className="ml-auto px-3 py-1.5 text-xs font-medium bg-accent text-on-accent rounded-lg shrink-0 flex items-center gap-1 hover:bg-accent-hover transition-colors"
+              className="ml-auto px-3 py-1.5 text-xs font-medium surface-inverse bg-accent text-on-accent rounded-lg shrink-0 flex items-center gap-1 hover:bg-accent-hover transition-colors"
             >
               <Target size={13} />
               Practice test
@@ -583,7 +583,7 @@ export default function LearnContent({
             {onGoToPractice ? (
               <button
                 onClick={onGoToPractice}
-                className="px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
+                className="px-5 py-2.5 surface-inverse bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
               >
                 <span>Practice test</span>
                 <ArrowRight size={16} />
@@ -591,7 +591,7 @@ export default function LearnContent({
             ) : (
               <Link
                 to={`/test/${currentTopic.group}`}
-                className="px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
+                className="px-5 py-2.5 surface-inverse bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
               >
                 <span>Practice test</span>
                 <ArrowRight size={16} />

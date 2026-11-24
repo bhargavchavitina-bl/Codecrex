@@ -80,6 +80,13 @@ import {
   useCelebrations,
 } from "./components/celebrations/CelebrationContext";
 import { CoinCheckbox } from "./components/celebrations/CoinCheckbox";
+import {
+  HERO_PREVIEW_GREETING_NAME,
+  HERO_PREVIEW_SUBTITLE,
+  HERO_PREVIEW_AVATAR,
+  DASHBOARD_MOTTO,
+  DSA_ROADMAP_SUBTITLE,
+} from "./content/copy";
 
 const DevAnimations = import.meta.env.DEV
   ? React.lazy(() => import("./components/celebrations/DevAnimations"))
@@ -381,10 +388,15 @@ function Landing() {
             </div>
             <div className="preview-card">
               <div className="preview-top">
-                <div className="preview-avatar">A</div>
+                <div className="preview-avatar">{HERO_PREVIEW_AVATAR}</div>
                 <div>
-                  <b>Good morning, Aanya</b>
-                  <small>Ready to climb a little higher?</small>
+                  <b>
+                    {HERO_PREVIEW_GREETING_NAME}{" "}
+                    <span role="img" aria-label="dinosaur">
+                      🦖
+                    </span>
+                  </b>
+                  <small>{HERO_PREVIEW_SUBTITLE}</small>
                 </div>
                 <div className="preview-dots">···</div>
               </div>
@@ -392,7 +404,7 @@ function Landing() {
                 <div>
                   <small>Problems solved</small>
                   <b>
-                    24 <em>↗ 12%</em>
+                    24 <em className="preview-stat-pill">+3 today</em>
                   </b>
                 </div>
                 <div className="mini-progress">
@@ -1858,7 +1870,7 @@ function Dashboard() {
             , {user?.name?.split(" ")[0] || "climber"}{" "}
             <span className="wave">✦</span>
           </h1>
-          <p>Small, steady steps are how big things happen.</p>
+          <p>{DASHBOARD_MOTTO}</p>
         </div>
         <Link className="btn btn-primary" to="/dsa">
           Continue learning <ArrowRight size={16} />
@@ -2240,7 +2252,7 @@ function DsaRoadmap() {
       <PageHead
         eyebrow="THE ROADMAP"
         title="DSA, one pattern at a time."
-        description="A thoughtful path through the patterns that show up in interviews."
+        description={DSA_ROADMAP_SUBTITLE}
         action={
           <span className="roadmap-count">
             <Code2 size={16} />
@@ -2260,23 +2272,21 @@ function DsaRoadmap() {
           <ProgressRing value={percent} size={62} />
         </div>
         <div className="overall-track">
-          <i style={{ width: `${percent}%` }} />
+          <i
+            style={{
+              width: totalSolved > 0 ? `max(4px, ${percent}%)` : "0%",
+            }}
+          />
         </div>
         <div className="overall-foot">
           <span>Keep showing up. It adds up.</span>
-          <div className="diff-breakdown">
-            <span>
-              <i className="dot-easy" />
-              Easy {solvedEasy}/{totalEasy}
-            </span>
-            <span>
-              <i className="dot-medium" />
-              Medium {solvedMedium}/{totalMedium}
-            </span>
-            <span>
-              <i className="dot-hard" />
-              Hard {solvedHard}/{totalHard}
-            </span>
+          <div
+            className="diff-breakdown"
+            aria-label={`${solvedEasy} easy, ${solvedMedium} medium, ${solvedHard} hard`}
+          >
+            <span title="Easy">○ Easy {solvedEasy}/{totalEasy}</span>
+            <span title="Medium">◐ Medium {solvedMedium}/{totalMedium}</span>
+            <span title="Hard">● Hard {solvedHard}/{totalHard}</span>
           </div>
         </div>
       </div>
@@ -2334,7 +2344,10 @@ function DsaRoadmap() {
                   <div className="progress-track">
                     <i
                       style={{
-                        width: `${ps.length ? (n / ps.length) * 100 : 0}%`,
+                        width:
+                          n > 0
+                            ? `max(4px, ${ps.length ? (n / ps.length) * 100 : 0}%)`
+                            : "0%",
                       }}
                     />
                   </div>
@@ -2343,19 +2356,13 @@ function DsaRoadmap() {
                   </span>
                 </div>
                 <div className="topic-card-bottom">
-                  <div className="topic-diff">
-                    <span>
-                      <i className="dot-easy" />
-                      {diff[0]}
-                    </span>
-                    <span>
-                      <i className="dot-medium" />
-                      {diff[1]}
-                    </span>
-                    <span>
-                      <i className="dot-hard" />
-                      {diff[2]}
-                    </span>
+                  <div
+                    className="topic-diff"
+                    aria-label={`${diff[0]} easy, ${diff[1]} medium, ${diff[2]} hard`}
+                  >
+                    <span title="Easy">○ Easy {diff[0]}</span>
+                    <span title="Medium">◐ Medium {diff[1]}</span>
+                    <span title="Hard">● Hard {diff[2]}</span>
                   </div>
                   <ChevronRight size={16} />
                 </div>

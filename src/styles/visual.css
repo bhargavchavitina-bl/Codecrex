@@ -444,21 +444,31 @@ textarea:focus-visible {
 
 .progress-ring {
   --progress-color: var(--accent);
-  background: conic-gradient(var(--accent) var(--progress), var(--surface-2) 0);
+  background: conic-gradient(var(--accent) var(--progress), var(--surface-3) 0) !important;
   transition: background var(--dur-slow) var(--ease-standard);
 }
 
 .progress-ring > span {
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--surface) !important;
+  color: var(--ink) !important;
   font-variant-numeric: tabular-nums;
+}
+
+.progress-track,
+.overall-track,
+.stat-track,
+.track {
+  background: var(--surface-3) !important;
+  border-radius: 9999px !important;
+  overflow: hidden !important;
 }
 
 .progress-track i,
 .overall-track i,
 .stat-track i,
 .track i {
-  background: var(--accent);
+  background: var(--accent) !important;
+  border-radius: 9999px !important;
   transition: width var(--dur-slow) var(--ease-standard), background-color var(--dur-base);
 }
 
@@ -1131,27 +1141,50 @@ textarea:focus-visible {
 
 /* Problem of the Day card */
 .potd-card {
-  background: var(--surface-2) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-left: 3px solid var(--accent) !important;
-  border-top: 1px solid var(--border) !important;
-  border-right: 1px solid var(--border) !important;
-  border-bottom: 1px solid var(--border) !important;
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+.potd-symbol {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+.potd-symbol svg {
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
 }
 .potd-copy b {
   color: var(--ink) !important;
+  font-size: 15px !important;
 }
 .potd-copy small {
   color: var(--muted) !important;
 }
 .potd-copy .eyebrow {
-  background: var(--accent-soft) !important;
-  color: var(--accent-text) !important;
-  border-radius: 6px;
-  padding: 2px 8px;
+  background: transparent !important;
+  color: var(--muted) !important;
+  padding: 0 !important;
+  margin: 0 !important;
   display: inline-block;
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.potd-copy .eyebrow::before {
+  display: none !important;
+}
+.potd-card .btn-primary {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border: 1px solid var(--accent) !important;
+}
+.potd-card .btn-primary svg {
+  color: inherit !important;
 }
 
 /* Empty weekly rhythm bar stub */
@@ -1221,20 +1254,96 @@ textarea:focus-visible {
 .preview-next,
 .preview-chart {
   border-color: var(--border);
-  background-color: var(--surface);
+  background-color: var(--surface) !important;
+  color: var(--ink) !important;
   box-shadow: 0 16px 42px color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
-.hero-art::before {
-  background: radial-gradient(circle, var(--accent-soft), transparent 70%);
+.float-card {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  border-radius: 12px;
 }
-
-.orbit {
-  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+.float-card b {
+  font-size: 11px;
+  color: var(--ink) !important;
 }
-
+.float-card small {
+  font-size: 9px;
+  color: var(--muted) !important;
+}
 .float-card-top {
+  top: 16px;
+  right: -32px;
   animation: float-gentle 5s ease-in-out infinite;
+}
+.float-card-bottom {
+  /* Offset outside and below preview-card so it never covers "Pick up where you left off" */
+  bottom: -32px;
+  left: -44px;
+  animation: float-gentle 5s ease-in-out infinite reverse;
+}
+
+@media (max-width: 900px) {
+  .float-card {
+    display: none !important;
+  }
+}
+
+.preview-stats em,
+.preview-stat-pill {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--on-accent) !important;
+  background: var(--accent) !important;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  vertical-align: 2px;
+  display: inline-block;
+}
+
+.avatar-stack i {
+  font-style: normal;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  border: 1px solid var(--border) !important;
+  border-radius: 50%;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  font-size: 11px;
+  font-weight: 700;
+}
+.avatar-stack i:nth-child(2),
+.avatar-stack i.avatar-dark {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+  border: 1px solid var(--inverse-bg) !important;
+}
+
+.float-icon.target-icon {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+.float-icon.target-icon svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+.float-check {
+  color: var(--ink) !important;
+}
+
+.hero-star,
+.star-a,
+.star-b {
+  color: var(--ink) !important;
 }
 
 .feature-grid {
@@ -2130,4 +2239,144 @@ textarea:focus-visible {
   background: var(--accent-soft);
   color: var(--accent-text);
   border-color: var(--accent);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL MONOCHROME CONTRAST UTILITIES AND BADGES
+   ══════════════════════════════════════════════════════════════ */
+.surface-inverse {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+}
+.surface-inverse svg {
+  color: inherit !important;
+}
+.surface-light {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+}
+
+.text-on-accent,
+.text-inverse-ink,
+.text-on-success,
+.text-on-ember {
+  color: var(--on-accent) !important;
+}
+.text-on-accent svg,
+.text-inverse-ink svg {
+  color: inherit !important;
+}
+.bg-accent {
+  background-color: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+.bg-accent svg {
+  color: inherit !important;
+}
+
+/* Feature card icon contrast fix */
+.feature-icon {
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border) !important;
+}
+.feature-icon svg {
+  color: var(--ink) !important;
+}
+.feature-card:nth-child(2) .feature-icon,
+.feature-icon.feature-icon-inverse {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+  border: 1px solid var(--inverse-bg) !important;
+}
+.feature-card:nth-child(2) .feature-icon svg,
+.feature-icon.feature-icon-inverse svg {
+  color: #FFFFFF !important;
+}
+
+/* Aptitude symbol contrast fix */
+.apt-symbol {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border) !important;
+}
+.apt-card:nth-child(2) .apt-symbol {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+  border: 1px solid var(--inverse-bg) !important;
+}
+
+/* Profile big avatar contrast fix */
+.profile-big-avatar {
+  background: var(--inverse-bg) !important;
+  background-color: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+  border: 3px solid var(--surface) !important;
+}
+
+/* Badges, pills and chips strictly outline or inverse */
+.badge,
+.pill,
+.chip,
+.side-badge,
+.month-badge,
+.badge-muted,
+.badge-outline {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.badge-inverse,
+.badge-success,
+.badge-accent,
+.month-badge.active,
+.month-badge.today {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+  border: 1px solid var(--inverse-bg) !important;
+}
+.badge-inverse svg,
+.badge-success svg,
+.badge-accent svg,
+.month-badge.active svg,
+.month-badge.today svg {
+  color: inherit !important;
+}
+
+/* Topic difficulty and breakdown styling */
+.topic-diff,
+.diff-breakdown {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  color: var(--ink) !important;
+}
+.topic-diff span,
+.diff-breakdown span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: var(--ink) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Active day in calendars */
+.month-day.day-active {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+  font-weight: 700 !important;
+}
+.goal-icon {
+  background: var(--inverse-bg) !important;
+  color: var(--inverse-ink) !important;
+}
+.goal-icon svg {
+  color: #FFFFFF !important;
 }
