@@ -14,7 +14,7 @@ import {
 import {
   APTITUDE_PRACTICE_TOPICS,
   DSA_PRACTICE_TOPICS,
-} from "../../../api/salaar/_lib/practiceBank";
+} from "../../data/salaarTopics";
 import type {
   LearningMode,
   SalaarDashboardProgress,

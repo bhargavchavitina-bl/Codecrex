@@ -1,8 +1,14 @@
-import { problems, problemMatchesTopic, type Problem } from "../../../src/data/problems.ts";
-import { topics } from "../../../src/data/topics.ts";
-import { expandedMCQs } from "../../../src/data/aptitude-expanded.ts";
-import type { MCQ } from "../../../src/data/aptitude.ts";
-import type { LearningMode } from "./types.ts";
+import { problems, problemMatchesTopic, type Problem } from "../../../src/data/problems.js";
+import { topics } from "../../../src/data/topics.js";
+import { expandedMCQs } from "../../../src/data/aptitude-expanded.js";
+import type { MCQ } from "../../../src/data/aptitude.js";
+import {
+  DSA_PRACTICE_TOPICS,
+  APTITUDE_PRACTICE_TOPICS,
+} from "../../../src/data/salaarTopics.js";
+import type { LearningMode } from "./types.js";
+
+export { DSA_PRACTICE_TOPICS, APTITUDE_PRACTICE_TOPICS };
 
 export interface PracticeQuestionClientView {
   id: string;
@@ -26,25 +32,7 @@ export interface PracticeQuestionInternal extends PracticeQuestionClientView {
   complexity?: { time: string; space: string };
 }
 
-export const DSA_PRACTICE_TOPICS = topics.map((t) => ({
-  id: t.id,
-  name: t.name,
-  category: t.category,
-}));
-
-export const APTITUDE_PRACTICE_TOPICS = [
-  { id: "number-system", name: "Number Systems" },
-  { id: "percentages", name: "Percentages" },
-  { id: "profit-loss", name: "Profit & Loss" },
-  { id: "ratio-proportion", name: "Ratio & Proportion" },
-  { id: "averages", name: "Averages" },
-  { id: "time-work", name: "Time & Work" },
-  { id: "time-speed-distance", name: "Time, Speed & Distance" },
-  { id: "permutation-combination", name: "Permutations & Combinations" },
-  { id: "probability", name: "Probability" },
-  { id: "logical-reasoning", name: "Logical Reasoning" },
-  { id: "data-interpretation", name: "Data Interpretation" },
-] as const;
+// Topic lists imported from src/data/salaarTopics.ts
 
 // Additional curated & verified practice bank items for aptitude topics not in expandedMCQs
 const supplementalAptitudeMCQs: MCQ[] = [

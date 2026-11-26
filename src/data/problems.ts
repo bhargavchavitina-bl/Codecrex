@@ -1,4 +1,4 @@
-import { topics } from "./topics.ts";
+import { topics } from "./topics.js";
 
 export type Problem = {
   id: string;

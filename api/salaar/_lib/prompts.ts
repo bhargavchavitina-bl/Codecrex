@@ -1,4 +1,4 @@
-import type { LearningMode, SalaarDashboardProgress } from "./types.ts";
+import type { LearningMode, SalaarDashboardProgress } from "./types.js";
 
 export interface PromptOptions {
   mode: LearningMode;

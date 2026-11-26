@@ -304,6 +304,17 @@ function buildGuestDashboard(storeState: {
   };
 }
 
+export function buildLocalDashboardFallback(
+  storeFallback: Parameters<typeof buildGuestDashboard>[0],
+): SalaarDashboardProgress {
+  const { progress } = buildGuestDashboard(storeFallback);
+  return {
+    ...progress,
+    aiConfigured: false,
+    aiProviderName: "Backend check unavailable",
+  };
+}
+
 export async function fetchSalaarDashboard(
   isGuest: boolean,
   storeFallback: Parameters<typeof buildGuestDashboard>[0],

@@ -8,6 +8,7 @@ import {
   Target,
 } from "lucide-react";
 import {
+  buildLocalDashboardFallback,
   fetchSalaarDashboard,
   updateSalaarPreferences,
   type LearningMode,
@@ -41,19 +42,21 @@ export const SalaarPage: React.FC = () => {
   const [practiceTopicId, setPracticeTopicId] = useState<string>("all");
 
   const loadDashboard = useCallback(async () => {
+    const storeSnapshot = {
+      userName: user?.name || "Learner",
+      targetRole: user?.target || "Software Engineer",
+      solved,
+      revisit,
+      activeDays,
+      attempts,
+    };
     try {
       setError(null);
-      const data = await fetchSalaarDashboard(isGuest, {
-        userName: user?.name || "Learner",
-        targetRole: user?.target || "Software Engineer",
-        solved,
-        revisit,
-        activeDays,
-        attempts,
-      });
+      const data = await fetchSalaarDashboard(isGuest, storeSnapshot);
       setProgress(data);
     } catch (err) {
       setError((err as Error).message || "Could not load SALAAR workspace.");
+      setProgress((prev) => prev || buildLocalDashboardFallback(storeSnapshot));
     } finally {
       setLoading(false);
     }

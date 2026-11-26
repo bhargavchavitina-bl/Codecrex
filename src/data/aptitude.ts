@@ -79,5 +79,5 @@ export const aptitudeTopics = [
     ],
   },
 ];
-import { expandedMCQs } from "./aptitude-expanded.ts";
+import { expandedMCQs } from "./aptitude-expanded.js";
 export const aptitudeQuestions: MCQ[] = [...expandedMCQs];

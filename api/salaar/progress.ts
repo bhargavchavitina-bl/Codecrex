@@ -1,8 +1,8 @@
-import { getAiProviderStatus } from "./_lib/aiProvider.ts";
-import { getQueryParams, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.ts";
-import { getSalaarDashboardProgress } from "./_lib/memoryService.ts";
-import { authenticateRequest } from "./_lib/supabaseAuth.ts";
-import { resolveClientLocalDate } from "../../src/lib/streakUtils.ts";
+import { getAiProviderStatus } from "./_lib/aiProvider.js";
+import { getQueryParams, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.js";
+import { getSalaarDashboardProgress } from "./_lib/memoryService.js";
+import { authenticateRequest } from "./_lib/supabaseAuth.js";
+import { resolveClientLocalDate } from "../../src/lib/streakUtils.js";
 
 export default async function handler(req: NodeRequest, res: NodeResponse): Promise<void> {
   if (req.method !== "GET") {

@@ -1,15 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { problems, problemMatchesTopic } from "../../../src/data/problems.ts";
-import { topics } from "../../../src/data/topics.ts";
+import { problems, problemMatchesTopic } from "../../../src/data/problems.js";
+import { topics } from "../../../src/data/topics.js";
 import {
   addDaysIso,
   buildWeeklyCalendar,
   calculateCurrentStreak,
   calculateLongestStreak,
   normalizeActiveDays,
-} from "../../../src/lib/streakUtils.ts";
-import { getAiProviderStatus } from "./aiProvider.ts";
-import { isMissingTableError } from "./supabaseAuth.ts";
+} from "../../../src/lib/streakUtils.js";
+import { getAiProviderStatus } from "./aiProvider.js";
+import { isMissingTableError } from "./supabaseAuth.js";
 import type {
   ActivityEventRecord,
   CompletedQuestionRecord,
@@ -24,7 +24,7 @@ import type {
   StudiedTopicRecord,
   TopicPerformanceMetric,
   WeakTopicRecord,
-} from "./types.ts";
+} from "./types.js";
 
 export const DEFAULT_PREFERENCES: LearningPreferences = {
   explanationStyle: "simple",

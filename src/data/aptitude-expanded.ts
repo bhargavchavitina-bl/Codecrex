@@ -1,4 +1,4 @@
-import type { MCQ } from "./aptitude.ts";
+import type { MCQ } from "./aptitude.js";
 type Q = [string, string, string, string, string, number, string, ...unknown[]];
 const pack = (topicId: string, rows: Q[]): MCQ[] =>
   rows.map(([question, a, b, c, d, correctIndex, explanation], i) => ({

@@ -1,4 +1,4 @@
-import { ensureBackendEnv } from "./supabaseAuth.ts";
+import { ensureBackendEnv } from "./supabaseAuth.js";
 
 export interface ChatTurn {
   role: "user" | "assistant";

@@ -1,8 +1,8 @@
-import { getQueryParams, readJsonBody, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.ts";
-import { createEmptyMemory, DEFAULT_PREFERENCES, getSalaarDashboardProgress } from "./_lib/memoryService.ts";
-import { authenticateRequest, isMissingTableError } from "./_lib/supabaseAuth.ts";
-import type { LearningPreferences, WeakTopicRecord } from "./_lib/types.ts";
-import { resolveClientLocalDate } from "../../src/lib/streakUtils.ts";
+import { getQueryParams, readJsonBody, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.js";
+import { createEmptyMemory, DEFAULT_PREFERENCES, getSalaarDashboardProgress } from "./_lib/memoryService.js";
+import { authenticateRequest, isMissingTableError } from "./_lib/supabaseAuth.js";
+import type { LearningPreferences, WeakTopicRecord } from "./_lib/types.js";
+import { resolveClientLocalDate } from "../../src/lib/streakUtils.js";
 
 export default async function handler(req: NodeRequest, res: NodeResponse): Promise<void> {
   const { auth, error, statusCode } = await authenticateRequest(req);

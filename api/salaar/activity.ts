@@ -1,12 +1,12 @@
-import { getQueryParams, readJsonBody, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.ts";
+import { getQueryParams, readJsonBody, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.js";
 import {
   getSalaarDashboardProgress,
   recordQualifyingActivity,
   recordStudiedTopic,
-} from "./_lib/memoryService.ts";
-import { authenticateRequest } from "./_lib/supabaseAuth.ts";
-import type { LearningMode } from "./_lib/types.ts";
-import { resolveClientLocalDate, resolveValidTimeZone } from "../../src/lib/streakUtils.ts";
+} from "./_lib/memoryService.js";
+import { authenticateRequest } from "./_lib/supabaseAuth.js";
+import type { LearningMode } from "./_lib/types.js";
+import { resolveClientLocalDate, resolveValidTimeZone } from "../../src/lib/streakUtils.js";
 
 const ALLOWED_EVENTS = new Set([
   "dsa_problem_solved",

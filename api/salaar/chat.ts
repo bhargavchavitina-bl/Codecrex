@@ -1,16 +1,16 @@
-import { generateSalaarReply, type ChatTurn } from "./_lib/aiProvider.ts";
-import { getQueryParams, readJsonBody, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.ts";
+import { generateSalaarReply, type ChatTurn } from "./_lib/aiProvider.js";
+import { getQueryParams, readJsonBody, sendJson, type NodeRequest, type NodeResponse } from "./_lib/http.js";
 import {
   createEmptyMemory,
   getSalaarDashboardProgress,
   recordQualifyingActivity,
   recordStudiedTopic,
-} from "./_lib/memoryService.ts";
-import { buildSalaarSystemPrompt, detectExplicitCodeOrSolutionRequest } from "./_lib/prompts.ts";
-import { authenticateRequest, isMissingTableError } from "./_lib/supabaseAuth.ts";
-import type { LearningMode, SalaarMessage } from "./_lib/types.ts";
-import { problems } from "../../src/data/problems.ts";
-import { resolveClientLocalDate, resolveValidTimeZone } from "../../src/lib/streakUtils.ts";
+} from "./_lib/memoryService.js";
+import { buildSalaarSystemPrompt, detectExplicitCodeOrSolutionRequest } from "./_lib/prompts.js";
+import { authenticateRequest, isMissingTableError } from "./_lib/supabaseAuth.js";
+import type { LearningMode, SalaarMessage } from "./_lib/types.js";
+import { problems } from "../../src/data/problems.js";
+import { resolveClientLocalDate, resolveValidTimeZone } from "../../src/lib/streakUtils.js";
 
 export default async function handler(req: NodeRequest, res: NodeResponse): Promise<void> {
   if (req.method === "GET") {
