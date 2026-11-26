@@ -19,24 +19,120 @@ export interface AiCompletionFailure {
   provider?: string;
 }
 
+function readEnvKey(name: string): string {
+  const raw = process.env[name]?.trim() || "";
+  return raw.replace(/^["']|["']$/g, "").trim();
+}
+
 export function getAiProviderStatus(): {
   configured: boolean;
   provider: string;
 } {
   ensureBackendEnv();
-  if (process.env.GEMINI_API_KEY?.trim()) {
+  if (readEnvKey("GEMINI_API_KEY")) {
     return { configured: true, provider: "Google Gemini" };
   }
-  if (process.env.OPENAI_API_KEY?.trim()) {
+  if (readEnvKey("OPENAI_API_KEY")) {
     return { configured: true, provider: "OpenAI" };
   }
-  if (process.env.GROQ_API_KEY?.trim()) {
+  if (readEnvKey("GROQ_API_KEY")) {
     return { configured: true, provider: "Groq" };
   }
-  if (process.env.ANTHROPIC_API_KEY?.trim()) {
+  if (readEnvKey("ANTHROPIC_API_KEY")) {
     return { configured: true, provider: "Anthropic" };
   }
   return { configured: false, provider: "Unconfigured (set GEMINI_API_KEY)" };
+}
+
+function coalesceHistoryTurns(history: ChatTurn[]): ChatTurn[] {
+  const cleaned: ChatTurn[] = [];
+  for (const turn of history) {
+    const text = typeof turn.content === "string" ? turn.content.trim() : "";
+    if (!text) continue;
+    const role: "user" | "assistant" = turn.role === "assistant" ? "assistant" : "user";
+    if (cleaned.length === 0 && role !== "user") {
+      // Skip orphaned leading assistant turns so alternating turn constraints always hold.
+      continue;
+    }
+    const prev = cleaned[cleaned.length - 1];
+    if (prev && prev.role === role) {
+      prev.content = `${prev.content}\n\n${text}`;
+    } else {
+      cleaned.push({ role, content: text });
+    }
+  }
+  return cleaned;
+}
+
+export function buildNormalizedGeminiContents(
+  history: ChatTurn[],
+  userMessage: string,
+): Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> {
+  const coalesced = coalesceHistoryTurns(history);
+  // Drop trailing user turn from history if present because the new userMessage is always appended as user.
+  const trimmed =
+    coalesced.length > 0 && coalesced[coalesced.length - 1].role === "user"
+      ? coalesced.slice(0, -1)
+      : coalesced;
+
+  return [
+    ...trimmed.map((turn) => ({
+      role: (turn.role === "assistant" ? "model" : "user") as "user" | "model",
+      parts: [{ text: turn.content }],
+    })),
+    {
+      role: "user" as const,
+      parts: [{ text: userMessage }],
+    },
+  ];
+}
+
+export function buildNormalizedAnthropicMessages(
+  history: ChatTurn[],
+  userMessage: string,
+): Array<{ role: "user" | "assistant"; content: string }> {
+  const coalesced = coalesceHistoryTurns(history);
+  const trimmed =
+    coalesced.length > 0 && coalesced[coalesced.length - 1].role === "user"
+      ? coalesced.slice(0, -1)
+      : coalesced;
+
+  return [
+    ...trimmed.map((turn) => ({ role: turn.role, content: turn.content })),
+    { role: "user" as const, content: userMessage },
+  ];
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = 25000,
+): Promise<{ response?: Response; networkError?: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    return { response };
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return { networkError: `Request timed out after ${Math.round(timeoutMs / 1000)}s.` };
+    }
+    return { networkError: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function parseJsonSafe<T>(response: Response): Promise<{ data?: T; error?: string }> {
+  try {
+    const raw = await response.text();
+    if (!raw.trim()) {
+      return { error: "Upstream provider returned an empty response body." };
+    }
+    return { data: JSON.parse(raw) as T };
+  } catch {
+    return { error: "Upstream provider returned non-JSON output." };
+  }
 }
 
 async function callGemini(
@@ -45,27 +141,21 @@ async function callGemini(
   history: ChatTurn[],
   userMessage: string,
 ): Promise<AiCompletionResult | AiCompletionFailure> {
-  const modelsToTry = [
-    process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash",
-    "gemini-2.0-flash",
-  ];
+  const configuredModel = readEnvKey("GEMINI_MODEL");
+  const modelsToTry = Array.from(
+    new Set(
+      [configuredModel || "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"].filter(
+        Boolean,
+      ),
+    ),
+  );
 
-  const contents = [
-    ...history.map((turn) => ({
-      role: turn.role === "assistant" ? "model" : "user",
-      parts: [{ text: turn.content }],
-    })),
-    {
-      role: "user",
-      parts: [{ text: userMessage }],
-    },
-  ];
-
+  const contents = buildNormalizedGeminiContents(history, userMessage);
   let lastError = "Failed to reach Google Gemini API.";
 
   for (const model of modelsToTry) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const response = await fetch(endpoint, {
+    const { response, networkError } = await fetchWithTimeout(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -80,13 +170,26 @@ async function callGemini(
       }),
     });
 
+    if (networkError || !response) {
+      lastError = `Gemini network error: ${networkError || "Request failed."}`;
+      break;
+    }
+
     if (response.ok) {
-      const data = (await response.json()) as {
+      const parsed = await parseJsonSafe<{
         candidates?: Array<{
           content?: { parts?: Array<{ text?: string }> };
+          finishReason?: string;
         }>;
-      };
-      const text = data.candidates?.[0]?.content?.parts
+        promptFeedback?: { blockReason?: string };
+      }>(response);
+
+      if (!parsed.data) {
+        lastError = parsed.error || "Invalid JSON from Gemini API.";
+        continue;
+      }
+
+      const text = parsed.data.candidates?.[0]?.content?.parts
         ?.map((p) => p.text || "")
         .join("")
         .trim();
@@ -98,13 +201,22 @@ async function callGemini(
           model,
         };
       }
-      lastError = "Gemini returned an empty response.";
+
+      const blockReason =
+        parsed.data.promptFeedback?.blockReason ||
+        parsed.data.candidates?.[0]?.finishReason;
+      lastError = blockReason
+        ? `Gemini returned no text (${blockReason}).`
+        : "Gemini returned an empty response.";
       continue;
     }
 
     const errText = await response.text().catch(() => "");
     lastError = `Gemini API error (${response.status}): ${errText.slice(0, 240)}`;
-    if (response.status !== 404) {
+    const retryableModelError =
+      response.status === 404 ||
+      (response.status === 400 && /model|not found|not supported/i.test(errText));
+    if (!retryableModelError) {
       break;
     }
   }
@@ -126,7 +238,8 @@ async function callOpenAiCompatible(
   history: ChatTurn[],
   userMessage: string,
 ): Promise<AiCompletionResult | AiCompletionFailure> {
-  const response = await fetch(url, {
+  const cleanedHistory = coalesceHistoryTurns(history);
+  const { response, networkError } = await fetchWithTimeout(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -138,11 +251,20 @@ async function callOpenAiCompatible(
       max_tokens: 2048,
       messages: [
         { role: "system", content: systemPrompt },
-        ...history.map((h) => ({ role: h.role, content: h.content })),
+        ...cleanedHistory.map((h) => ({ role: h.role, content: h.content })),
         { role: "user", content: userMessage },
       ],
     }),
   });
+
+  if (networkError || !response) {
+    return {
+      ok: false,
+      code: "AI_UPSTREAM_ERROR",
+      message: `${providerName} network error: ${networkError || "Request failed."}`,
+      provider: providerName,
+    };
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => "");
@@ -154,10 +276,19 @@ async function callOpenAiCompatible(
     };
   }
 
-  const data = (await response.json()) as {
+  const parsed = await parseJsonSafe<{
     choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content?.trim();
+  }>(response);
+  if (!parsed.data) {
+    return {
+      ok: false,
+      code: "AI_UPSTREAM_ERROR",
+      message: `${providerName}: ${parsed.error || "Invalid JSON response."}`,
+      provider: providerName,
+    };
+  }
+
+  const content = parsed.data.choices?.[0]?.message?.content?.trim();
   if (!content) {
     return {
       ok: false,
@@ -176,8 +307,8 @@ async function callAnthropic(
   history: ChatTurn[],
   userMessage: string,
 ): Promise<AiCompletionResult | AiCompletionFailure> {
-  const model = process.env.ANTHROPIC_MODEL?.trim() || "claude-3-5-haiku-latest";
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const model = readEnvKey("ANTHROPIC_MODEL") || "claude-3-5-haiku-latest";
+  const { response, networkError } = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -188,12 +319,18 @@ async function callAnthropic(
       model,
       max_tokens: 2048,
       system: systemPrompt,
-      messages: [
-        ...history.map((h) => ({ role: h.role, content: h.content })),
-        { role: "user", content: userMessage },
-      ],
+      messages: buildNormalizedAnthropicMessages(history, userMessage),
     }),
   });
+
+  if (networkError || !response) {
+    return {
+      ok: false,
+      code: "AI_UPSTREAM_ERROR",
+      message: `Anthropic network error: ${networkError || "Request failed."}`,
+      provider: "Anthropic",
+    };
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => "");
@@ -205,10 +342,19 @@ async function callAnthropic(
     };
   }
 
-  const data = (await response.json()) as {
+  const parsed = await parseJsonSafe<{
     content?: Array<{ type?: string; text?: string }>;
-  };
-  const content = data.content
+  }>(response);
+  if (!parsed.data) {
+    return {
+      ok: false,
+      code: "AI_UPSTREAM_ERROR",
+      message: `Anthropic: ${parsed.error || "Invalid JSON response."}`,
+      provider: "Anthropic",
+    };
+  }
+
+  const content = parsed.data.content
     ?.filter((block) => block.type === "text")
     .map((block) => block.text || "")
     .join("")
@@ -226,7 +372,8 @@ async function callAnthropic(
 }
 
 /**
- * Invokes the configured server-side AI model provider. Never reads keys from frontend.
+ * Invokes the configured server-side AI model provider with automatic fallback
+ * across configured keys. Never reads keys from frontend.
  */
 export async function generateSalaarReply(
   systemPrompt: string,
@@ -235,46 +382,77 @@ export async function generateSalaarReply(
 ): Promise<AiCompletionResult | AiCompletionFailure> {
   ensureBackendEnv();
 
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const attempts: Array<() => Promise<AiCompletionResult | AiCompletionFailure>> = [];
+
+  const geminiKey = readEnvKey("GEMINI_API_KEY");
   if (geminiKey) {
-    return callGemini(geminiKey, systemPrompt, history, userMessage);
+    attempts.push(() => callGemini(geminiKey, systemPrompt, history, userMessage));
   }
 
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const openaiKey = readEnvKey("OPENAI_API_KEY");
   if (openaiKey) {
-    return callOpenAiCompatible(
-      "https://api.openai.com/v1/chat/completions",
-      openaiKey,
-      process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
-      "OpenAI",
-      systemPrompt,
-      history,
-      userMessage,
+    attempts.push(() =>
+      callOpenAiCompatible(
+        "https://api.openai.com/v1/chat/completions",
+        openaiKey,
+        readEnvKey("OPENAI_MODEL") || "gpt-4o-mini",
+        "OpenAI",
+        systemPrompt,
+        history,
+        userMessage,
+      ),
     );
   }
 
-  const groqKey = process.env.GROQ_API_KEY?.trim();
+  const groqKey = readEnvKey("GROQ_API_KEY");
   if (groqKey) {
-    return callOpenAiCompatible(
-      "https://api.groq.com/openai/v1/chat/completions",
-      groqKey,
-      process.env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile",
-      "Groq",
-      systemPrompt,
-      history,
-      userMessage,
+    attempts.push(() =>
+      callOpenAiCompatible(
+        "https://api.groq.com/openai/v1/chat/completions",
+        groqKey,
+        readEnvKey("GROQ_MODEL") || "llama-3.3-70b-versatile",
+        "Groq",
+        systemPrompt,
+        history,
+        userMessage,
+      ),
     );
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const anthropicKey = readEnvKey("ANTHROPIC_API_KEY");
   if (anthropicKey) {
-    return callAnthropic(anthropicKey, systemPrompt, history, userMessage);
+    attempts.push(() => callAnthropic(anthropicKey, systemPrompt, history, userMessage));
+  }
+
+  if (attempts.length === 0) {
+    return {
+      ok: false,
+      code: "AI_KEY_MISSING",
+      message:
+        "AI model key is not configured on the backend. Add GEMINI_API_KEY (recommended) or OPENAI_API_KEY / GROQ_API_KEY to your .env file (or Vercel Environment Variables) and restart/redeploy.",
+    };
+  }
+
+  const failures: string[] = [];
+  let lastProvider: string | undefined;
+
+  for (const attempt of attempts) {
+    try {
+      const result = await attempt();
+      if (result.ok) {
+        return result;
+      }
+      lastProvider = result.provider || lastProvider;
+      failures.push(result.message);
+    } catch (err) {
+      failures.push(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return {
     ok: false,
-    code: "AI_KEY_MISSING",
-    message:
-      "AI model key is not configured on the backend. Add GEMINI_API_KEY (recommended) or OPENAI_API_KEY / GROQ_API_KEY to your .env file (or Vercel Environment Variables) and restart/redeploy.",
+    code: "AI_UPSTREAM_ERROR",
+    message: failures.join(" | ") || "Upstream AI provider request failed.",
+    provider: lastProvider,
   };
 }

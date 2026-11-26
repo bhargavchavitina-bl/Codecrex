@@ -50,16 +50,25 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
   }
 
   if (req.method === "POST") {
+    let body: {
+      action?: "hint" | "check" | "reveal_solution";
+      questionId?: string;
+      hintIndex?: number;
+      selectedIndex?: number;
+      hintsUsed?: number;
+      localDate?: string;
+      timezone?: string;
+    };
     try {
-      const body = await readJsonBody<{
-        action?: "hint" | "check" | "reveal_solution";
-        questionId?: string;
-        hintIndex?: number;
-        selectedIndex?: number;
-        hintsUsed?: number;
-        localDate?: string;
-        timezone?: string;
-      }>(req);
+      body = await readJsonBody(req);
+    } catch (parseErr) {
+      sendJson(res, 400, {
+        error: parseErr instanceof Error ? parseErr.message : "Invalid JSON request body.",
+      });
+      return;
+    }
+
+    try {
 
       if (!body.questionId || !body.action) {
         sendJson(res, 400, { error: "Missing questionId or action." });
@@ -86,7 +95,14 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
       }
 
       // Optional auth check (authenticated users get Postgres persistence; guests still practice cleanly)
-      const { auth } = await authenticateRequest(req);
+      let auth: Awaited<ReturnType<typeof authenticateRequest>>["auth"] = null;
+      try {
+        const authResult = await authenticateRequest(req);
+        auth = authResult.auth;
+      } catch (authErr) {
+        console.warn("[/api/salaar/practice POST] auth check failed, using guest mode:", authErr);
+      }
+
       const timezone = resolveValidTimeZone(body.timezone);
       const activityDate = resolveClientLocalDate(body.localDate, timezone);
       const hintsUsed = Math.max(0, Math.min(Number(body.hintsUsed || 0), 10));
@@ -94,31 +110,35 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
       // 2. Explicitly reveal full solution ONLY when requested
       if (body.action === "reveal_solution") {
         if (auth) {
-          const { error: pErr } = await auth.supabase.from("salaar_practice_attempts").insert({
-            user_id: auth.userId,
-            category: question.category,
-            topic_id: question.topicId,
-            difficulty: question.difficulty,
-            question_id: question.id,
-            question_title: question.title,
-            user_answer: null,
-            is_correct: false,
-            hints_used: hintsUsed,
-            solution_revealed: true,
-            activity_date: activityDate,
-          });
-          if (pErr && !isMissingTableError(pErr)) {
-            console.warn("Practice reveal insert warning:", pErr.message);
+          try {
+            const { error: pErr } = await auth.supabase.from("salaar_practice_attempts").insert({
+              user_id: auth.userId,
+              category: question.category,
+              topic_id: question.topicId,
+              difficulty: question.difficulty,
+              question_id: question.id,
+              question_title: question.title,
+              user_answer: null,
+              is_correct: false,
+              hints_used: hintsUsed,
+              solution_revealed: true,
+              activity_date: activityDate,
+            });
+            if (pErr && !isMissingTableError(pErr)) {
+              console.warn("Practice reveal insert warning:", pErr.message);
+            }
+            await updateMemoryAfterPractice(auth.supabase, auth.userId, {
+              questionId: question.id,
+              title: question.title,
+              category: question.category,
+              topicId: question.topicId,
+              difficulty: question.difficulty,
+              isCorrect: false,
+              hintsUsed: Math.max(1, hintsUsed),
+            });
+          } catch (dbErr) {
+            console.warn("[/api/salaar/practice reveal_solution] non-fatal persistence failure:", dbErr);
           }
-          await updateMemoryAfterPractice(auth.supabase, auth.userId, {
-            questionId: question.id,
-            title: question.title,
-            category: question.category,
-            topicId: question.topicId,
-            difficulty: question.difficulty,
-            isCorrect: false,
-            hintsUsed: Math.max(1, hintsUsed),
-          });
         }
 
         sendJson(res, 200, {
@@ -142,66 +162,72 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
         let persisted = false;
 
         if (auth) {
-          persisted = true;
-          const { error: insertErr } = await auth.supabase.from("salaar_practice_attempts").insert({
-            user_id: auth.userId,
-            category: question.category,
-            topic_id: question.topicId,
-            difficulty: question.difficulty,
-            question_id: question.id,
-            question_title: question.title,
-            user_answer: question.options[body.selectedIndex],
-            is_correct: isCorrect,
-            hints_used: hintsUsed,
-            solution_revealed: false,
-            activity_date: activityDate,
-          });
-          if (insertErr && !isMissingTableError(insertErr)) {
-            console.warn("Practice attempt insert warning:", insertErr.message);
-          }
-
-          await recordStudiedTopic(auth.supabase, auth.userId, question.category, question.topicId);
-          await updateMemoryAfterPractice(auth.supabase, auth.userId, {
-            questionId: question.id,
-            title: question.title,
-            category: question.category,
-            topicId: question.topicId,
-            difficulty: question.difficulty,
-            isCorrect,
-            hintsUsed,
-          });
-
-          if (isCorrect) {
-            const evType =
-              question.category === "dsa"
-                ? "dsa_problem_solved"
-                : "aptitude_question_completed";
-            const outcome = await recordQualifyingActivity(auth.supabase, auth.userId, {
-              eventType: evType,
+          try {
+            const { error: insertErr } = await auth.supabase.from("salaar_practice_attempts").insert({
+              user_id: auth.userId,
               category: question.category,
-              topicId: question.topicId,
+              topic_id: question.topicId,
+              difficulty: question.difficulty,
+              question_id: question.id,
+              question_title: question.title,
+              user_answer: question.options[body.selectedIndex],
+              is_correct: isCorrect,
+              hints_used: hintsUsed,
+              solution_revealed: false,
+              activity_date: activityDate,
+            });
+            if (insertErr && !isMissingTableError(insertErr)) {
+              console.warn("Practice attempt insert warning:", insertErr.message);
+            } else if (!insertErr) {
+              persisted = true;
+            }
+
+            await recordStudiedTopic(auth.supabase, auth.userId, question.category, question.topicId);
+            await updateMemoryAfterPractice(auth.supabase, auth.userId, {
               questionId: question.id,
               title: question.title,
-              dedupeKey: `practice:${question.id}:${activityDate}`,
-              activityDate,
-              timezone,
+              category: question.category,
+              topicId: question.topicId,
+              difficulty: question.difficulty,
+              isCorrect,
+              hintsUsed,
             });
-            streakUpdated = outcome.recorded;
 
-            // Sync solved status to problem_progress when practicing a DSA problem
-            if (question.category === "dsa" && question.id.startsWith("dsa:")) {
-              const rawProblemId = question.id.slice(4);
-              await auth.supabase.from("problem_progress").upsert(
-                {
-                  user_id: auth.userId,
-                  problem_id: rawProblemId,
-                  solved: true,
-                  solved_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                },
-                { onConflict: "user_id,problem_id" },
-              );
+            if (isCorrect) {
+              const evType =
+                question.category === "dsa"
+                  ? "dsa_problem_solved"
+                  : "aptitude_question_completed";
+              const outcome = await recordQualifyingActivity(auth.supabase, auth.userId, {
+                eventType: evType,
+                category: question.category,
+                topicId: question.topicId,
+                questionId: question.id,
+                title: question.title,
+                dedupeKey: `practice:${question.id}:${activityDate}`,
+                activityDate,
+                timezone,
+              });
+              streakUpdated = outcome.recorded;
+
+              // Sync solved status to problem_progress when practicing a DSA problem
+              if (question.category === "dsa" && question.id.startsWith("dsa:")) {
+                const rawProblemId = question.id.slice(4);
+                await auth.supabase.from("problem_progress").upsert(
+                  {
+                    user_id: auth.userId,
+                    problem_id: rawProblemId,
+                    solved: true,
+                    solved_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  },
+                  { onConflict: "user_id,problem_id" },
+                );
+              }
             }
+          } catch (dbErr) {
+            console.warn("[/api/salaar/practice check] non-fatal persistence failure:", dbErr);
+            persisted = false;
           }
         }
 
@@ -230,8 +256,13 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
 
       sendJson(res, 400, { error: "Unsupported practice action." });
     } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       console.error("[/api/salaar/practice POST] error:", err);
-      sendJson(res, 500, { error: "Failed to process practice request." });
+      sendJson(res, 500, {
+        error: detail
+          ? `Failed to process practice request: ${detail.slice(0, 180)}`
+          : "Failed to process practice request.",
+      });
     }
     return;
   }

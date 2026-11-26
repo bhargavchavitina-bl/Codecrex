@@ -40,40 +40,62 @@ export function getQueryParams(req: NodeRequest): URLSearchParams {
   return params;
 }
 
+function parseJsonPayload<T>(raw: string): T {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return {} as T;
+  }
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    throw new Error("Invalid JSON request body.");
+  }
+}
+
 export async function readJsonBody<T = Record<string, unknown>>(req: NodeRequest): Promise<T> {
+  if (Buffer.isBuffer(req.body)) {
+    return parseJsonPayload<T>(req.body.toString("utf8"));
+  }
+  if (typeof req.body === "string") {
+    return parseJsonPayload<T>(req.body);
+  }
   if (req.body && typeof req.body === "object") {
     return req.body as T;
   }
-  if (typeof req.body === "string" && req.body.trim()) {
-    return JSON.parse(req.body) as T;
+  if (req.readableEnded) {
+    return {} as T;
   }
 
   return await new Promise<T>((resolve, reject) => {
     const chunks: Buffer[] = [];
     let totalBytes = 0;
     const MAX_BYTES = 512 * 1024; // 512 KB cap
+    let settled = false;
+
+    const finishError = (err: Error) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
 
     req.on("data", (chunk: Buffer) => {
       totalBytes += chunk.length;
       if (totalBytes > MAX_BYTES) {
-        reject(new Error("Request payload too large."));
+        finishError(new Error("Request payload too large."));
         req.destroy();
         return;
       }
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     });
     req.on("end", () => {
-      const raw = Buffer.concat(chunks).toString("utf8").trim();
-      if (!raw) {
-        resolve({} as T);
-        return;
-      }
+      if (settled) return;
+      settled = true;
       try {
-        resolve(JSON.parse(raw) as T);
-      } catch {
-        reject(new Error("Invalid JSON request body."));
+        resolve(parseJsonPayload<T>(Buffer.concat(chunks).toString("utf8")));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("Invalid JSON request body."));
       }
     });
-    req.on("error", (err) => reject(err));
+    req.on("error", (err) => finishError(err instanceof Error ? err : new Error(String(err))));
   });
 }

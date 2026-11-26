@@ -5,7 +5,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
-import { createServer } from "vite";
+import { createServer, preview } from "vite";
+import {
+  buildNormalizedAnthropicMessages,
+  buildNormalizedGeminiContents,
+  generateSalaarReply,
+} from "../api/salaar/_lib/aiProvider.ts";
+import { readJsonBody, type NodeRequest } from "../api/salaar/_lib/http.ts";
 import {
   addDaysIso,
   buildWeeklyCalendar,
@@ -58,6 +64,109 @@ function testStreakUtils() {
   assert.equal(weekly[6].isToday, true);
   assert.equal(weekly[6].active, true);
   console.log("   ✓ All streak math assertions passed.");
+}
+
+async function testBackendResilience() {
+  console.log("1B. Testing HTTP Buffer body parsing & AI provider resilience...");
+
+  // Vercel may pass req.body as a Buffer instead of parsed object
+  const bufReq = {
+    body: Buffer.from(JSON.stringify({ message: "Remove Element", mode: "dsa" }), "utf8"),
+  } as unknown as NodeRequest;
+  const parsedBuf = await readJsonBody<{ message: string; mode: string }>(bufReq);
+  assert.equal(parsedBuf.message, "Remove Element");
+  assert.equal(parsedBuf.mode, "dsa");
+
+  const emptyBufReq = { body: Buffer.from("   ", "utf8") } as unknown as NodeRequest;
+  assert.deepEqual(await readJsonBody(emptyBufReq), {});
+
+  await assert.rejects(
+    readJsonBody({ body: "{invalid-json" } as unknown as NodeRequest),
+    /Invalid JSON request body/,
+  );
+
+  // Turn alternation & coalescing for Gemini & Anthropic
+  const geminiContents = buildNormalizedGeminiContents(
+    [
+      { role: "assistant", content: "Orphan leading model greeting" },
+      { role: "user", content: "Question part 1" },
+      { role: "user", content: "Question part 2" },
+      { role: "assistant", content: "Hint 1" },
+      { role: "assistant", content: "Hint 2" },
+      { role: "user", content: "Repeated trailing user turn" },
+    ],
+    "Help me understand Remove Element",
+  );
+  assert.deepEqual(
+    geminiContents.map((c) => c.role),
+    ["user", "model", "user"],
+    "Gemini contents must strictly alternate starting and ending with user",
+  );
+  assert.ok(geminiContents[0].parts[0].text.includes("Question part 1"));
+  assert.ok(geminiContents[0].parts[0].text.includes("Question part 2"));
+
+  const anthropicMsgs = buildNormalizedAnthropicMessages(
+    [
+      { role: "assistant", content: "Orphan" },
+      { role: "user", content: "U1" },
+      { role: "assistant", content: "A1" },
+    ],
+    "Follow-up",
+  );
+  assert.deepEqual(
+    anthropicMsgs.map((m) => m.role),
+    ["user", "assistant", "user"],
+  );
+
+  // Simulate upstream network error + model fallback without throwing 500
+  const originalFetch = globalThis.fetch;
+  const prevGeminiKey = process.env.GEMINI_API_KEY;
+  try {
+    process.env.GEMINI_API_KEY = '  "simulated-quoted-key"\n';
+
+    globalThis.fetch = (async () => {
+      throw new Error("Simulated TLS connection reset");
+    }) as typeof fetch;
+
+    const netFail = await generateSalaarReply("system", [], "Remove Element");
+    assert.equal(netFail.ok, false);
+    if (!netFail.ok) {
+      assert.equal(netFail.code, "AI_UPSTREAM_ERROR");
+      assert.match(netFail.message, /Simulated TLS connection reset/);
+    }
+
+    // Simulate 404 on gemini-2.5-flash falling back to 200 on gemini-2.0-flash
+    let callCount = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      callCount += 1;
+      const url = String(input);
+      if (url.includes("gemini-2.5-flash")) {
+        return new Response("model not found", { status: 404 });
+      }
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            { content: { parts: [{ text: "Use Two Pointers (slow & fast) in O(n) time." }] } },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const fallbackOk = await generateSalaarReply("system", [], "Remove Element");
+    assert.equal(callCount, 2);
+    assert.equal(fallbackOk.ok, true);
+    if (fallbackOk.ok) {
+      assert.equal(fallbackOk.model, "gemini-2.0-flash");
+      assert.match(fallbackOk.content, /Two Pointers/);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (prevGeminiKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = prevGeminiKey;
+  }
+
+  console.log("   ✓ Backend Buffer parsing, history normalization & AI fallback assertions passed.");
 }
 
 async function testApiEndpointsAndPlaywright() {
@@ -121,6 +230,50 @@ async function testApiEndpointsAndPlaywright() {
     assert.equal(typeof revJson.correctIndex, "number");
     assert.ok(revJson.explanation.length > 10);
     console.log("   ✓ Practice catalog, hint-first enforcement & server validation passed.");
+
+    // 2C2. Chat POST resilience ("Remove Element" prompt + malformed JSON check)
+    const badJsonChatRes = await fetch(`${baseUrl}/api/salaar/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{bad-json",
+    });
+    assert.equal(badJsonChatRes.status, 400, "Malformed JSON should return 400, not 500");
+
+    const removeElementPrompt =
+      'Help me understand "Remove Element": Which optimal algorithmic pattern & complexity signature solves "Remove Element" (Arrays · Easy)? Give me a hint first.';
+    const chatRes = await fetch(`${baseUrl}/api/salaar/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: removeElementPrompt,
+        mode: "dsa",
+        action: "chat",
+        topicId: "arrays",
+      }),
+    });
+    assert.notEqual(
+      chatRes.status,
+      500,
+      "POST /api/salaar/chat for Remove Element must never return unhandled HTTP 500",
+    );
+    const chatPayload = (await chatRes.json()) as {
+      reply?: string;
+      code?: string;
+      error?: string;
+    };
+    if (chatRes.status === 200) {
+      assert.ok(chatPayload.reply && chatPayload.reply.length > 10);
+      console.log("   ✓ Dev server POST /api/salaar/chat returned live AI reply (200).");
+    } else {
+      assert.ok(
+        chatRes.status === 503 || chatRes.status === 502,
+        `Expected 503 or 502 when key missing/upstream error, got ${chatRes.status}`,
+      );
+      assert.ok(
+        chatPayload.code === "AI_KEY_MISSING" || chatPayload.code === "AI_UPSTREAM_ERROR",
+      );
+      console.log(`   ✓ Dev server POST /api/salaar/chat returned structured ${chatRes.status} ${chatPayload.code} (never 500).`);
+    }
 
     // 2D. Playwright Browser E2E Verification at 1280px & 390px
     console.log("3. Running Playwright UI checks at 1280px and 390px...");
@@ -203,6 +356,27 @@ async function testApiEndpointsAndPlaywright() {
     await server.close();
   }
 
+  // Verify compiled Vite preview server API middleware when dist/ is present
+  const distDir = path.resolve(process.cwd(), "dist");
+  if (fs.existsSync(distDir)) {
+    const previewServer = await preview({ preview: { port: 4193 } });
+    try {
+      const prevRes = await fetch("http://localhost:4193/api/salaar/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: 'Help me understand "Remove Element" in Arrays.',
+          mode: "dsa",
+          action: "chat",
+        }),
+      });
+      assert.notEqual(prevRes.status, 500, "Preview server /api/salaar/chat must not return 500");
+      console.log(`   ✓ Vite preview /api/salaar/chat check passed (HTTP ${prevRes.status}).`);
+    } finally {
+      previewServer.httpServer.close();
+    }
+  }
+
   // Verify no AI API secrets or env reads ever leaked into dist/ (if dist exists)
   const distAssets = path.resolve(process.cwd(), "dist/assets");
   if (fs.existsSync(distAssets)) {
@@ -221,6 +395,7 @@ async function testApiEndpointsAndPlaywright() {
 
 async function main() {
   testStreakUtils();
+  await testBackendResilience();
   await testApiEndpointsAndPlaywright();
   console.log("\n✓ ALL SALAAR VERIFICATION CHECKS PASSED!");
 }

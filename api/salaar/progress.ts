@@ -42,7 +42,12 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
     );
     sendJson(res, 200, progress);
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
     console.error("[/api/salaar/progress] error:", err);
-    sendJson(res, 500, { error: "Failed to load SALAAR progress dashboard." });
+    sendJson(res, 500, {
+      error: detail
+        ? `Failed to load SALAAR progress dashboard: ${detail.slice(0, 180)}`
+        : "Failed to load SALAAR progress dashboard.",
+    });
   }
 }
