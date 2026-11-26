@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { formatDateInTimeZone } from "./streakUtils";
 
 export type GuestData = {
   solved: string[];
@@ -28,22 +29,7 @@ export type AttemptRecord = {
 const GUEST_STORAGE_KEY = "codecrest_guest_progress";
 
 export function getLocalDateString(date = new Date()): string {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata";
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: tz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(date);
-  } catch {
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Kolkata",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(date);
-  }
+  return formatDateInTimeZone(date);
 }
 
 // ---------------------------------------------------------------------------

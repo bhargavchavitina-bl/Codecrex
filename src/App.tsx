@@ -87,6 +87,11 @@ import {
   DASHBOARD_MOTTO,
   DSA_ROADMAP_SUBTITLE,
 } from "./content/copy";
+import { SalaarPage } from "./components/salaar/SalaarPage";
+import {
+  calculateCurrentStreak,
+  calculateLongestStreak,
+} from "./lib/streakUtils";
 
 const DevAnimations = import.meta.env.DEV
   ? React.lazy(() => import("./components/celebrations/DevAnimations"))
@@ -241,6 +246,14 @@ function App() {
           element={
             <Shell>
               <StreakPage />
+            </Shell>
+          }
+        />
+        <Route
+          path="/salaar"
+          element={
+            <Shell>
+              <SalaarPage />
             </Shell>
           }
         />
@@ -1423,6 +1436,19 @@ function Shell({ children }: { children: React.ReactNode }) {
               </>
             )}
           </NavLink>
+          <NavLink
+            to="/salaar"
+            className={({ isActive }) =>
+              "side-link " + (isActive ? "active" : "")
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Sparkles size={17} /> SALAAR AI <span className="side-badge">AI</span>
+                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
+              </>
+            )}
+          </NavLink>
           <div className="side-label side-label-spaced">YOUR SPACE</div>
           <NavLink
             to="/profile"
@@ -1789,18 +1815,7 @@ function MilestoneCelebration() {
   );
 }
 function calcStreak(days: string[], today: string) {
-  const s = new Set(days);
-  const d = new Date(today + "T12:00:00");
-  let n = 0;
-  if (!s.has(today)) {
-    d.setDate(d.getDate() - 1);
-    if (!s.has(d.toLocaleDateString("en-CA"))) return 0;
-  }
-  while (s.has(d.toLocaleDateString("en-CA"))) {
-    n++;
-    d.setDate(d.getDate() - 1);
-  }
-  return n;
+  return calculateCurrentStreak(days, today);
 }
 function PageHead({
   eyebrow,
@@ -3908,22 +3923,7 @@ function StreakPage() {
     year = date.getFullYear(),
     currentMonth = date.getMonth();
 
-  const longest = (() => {
-    const s = [...activeDays].sort();
-    let best = 0,
-      run = 0,
-      last = "";
-    for (const x of s) {
-      const d = new Date(x + "T12:00:00"),
-        prev = new Date(last + "T12:00:00");
-      if (last && Math.round((d.getTime() - prev.getTime()) / 86400000) === 1)
-        run++;
-      else run = 1;
-      best = Math.max(best, run);
-      last = x;
-    }
-    return Math.max(best, streak);
-  })();
+  const longest = Math.max(calculateLongestStreak(activeDays), streak);
 
   const activeDaysThisYear = activeDays.filter((d) => d.startsWith(`${year}-`)).length;
 

@@ -227,6 +227,7 @@ async function main() {
       "/aptitude/percentages/test",
       "/streak",
       "/profile",
+      "/salaar",
     ];
 
     for (const route of authRoutes) {
@@ -235,6 +236,23 @@ async function main() {
       await page.waitForTimeout(600); // allow animations
       const issues = await auditPage(page, route);
       allIssues.push(...issues);
+    }
+
+    // 3B. Also audit SALAAR Chat and Practice tabs
+    console.log("Auditing /salaar tabs (Chat & Practice)...");
+    await page.goto("http://localhost:5174/salaar", { waitUntil: "networkidle" });
+    await page.waitForTimeout(500);
+    const chatTabBtn = page.locator("button:has-text('AI Tutor Chat')");
+    if (await chatTabBtn.isVisible()) {
+      await chatTabBtn.click();
+      await page.waitForTimeout(400);
+      allIssues.push(...(await auditPage(page, "/salaar (chat)")));
+    }
+    const practiceTabBtn = page.locator("button:has-text('Practice System')");
+    if (await practiceTabBtn.isVisible()) {
+      await practiceTabBtn.click();
+      await page.waitForTimeout(500);
+      allIssues.push(...(await auditPage(page, "/salaar (practice)")));
     }
 
     // 4. Test Result Page audit

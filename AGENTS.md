@@ -20,7 +20,13 @@ The database structure is defined in [`supabase/schema.sql`](./supabase/schema.s
 - `problem_progress`: Problem status (`solved`, `bookmarked`, `revisit`, `note`, `solved_at`, `updated_at`) keyed by composite primary key `(user_id, problem_id)`.
 - `test_attempts`: MCQ test attempts (`id uuid`, `user_id`, `topic_id`, `score`, `total`, `accuracy`, `duration_seconds`, `answers jsonb`, `created_at`).
 - `activity_log`: Daily activity count used for streaks (`user_id`, `activity_date date`, `count int`, primary key `(user_id, activity_date)`).
+- **SALAAR AI Learning Agent tables (`supabase/migrations/003_salaar.sql`)**: `salaar_learning_memory`, `salaar_conversations`, `salaar_messages`, `salaar_activity_events` (deduplicated qualifying events), and `salaar_practice_attempts`.
 - Policies ensure `auth.uid() = user_id` (or `auth.uid() = id` for `profiles`) for all SELECT, INSERT, UPDATE, DELETE operations.
+
+### 3B. SALAAR Backend API & AI Credentials
+- Backend routes live under `api/salaar/*.ts` (Vercel Serverless Functions + Vite dev SSR middleware in `vite.config.ts`).
+- AI provider keys (`GEMINI_API_KEY`, optional `OPENAI_API_KEY`, `GROQ_API_KEY`, `ANTHROPIC_API_KEY`) must **only** be read in backend server handlers (`process.env`). Never prefix AI keys with `VITE_` or reference them in `src/`.
+- `vercel.json` excludes `/api/(.*)` from SPA index rewrites.
 
 ### 4. Streaks & Timezones
 - Daily streaks are recorded in `activity_log` based on the user's local timezone (defaulting to IST / `Asia/Kolkata`).

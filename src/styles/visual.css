@@ -251,11 +251,24 @@ p {
   color: var(--accent);
 }
 
+.btn-soft:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
 .btn-quiet,
 .btn-light {
   border-color: var(--border);
   background: var(--surface);
   color: var(--ink);
+}
+
+.btn-quiet:hover,
+.btn-light:hover {
+  border-color: var(--border-strong) !important;
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
 }
 
 .card,
@@ -2250,6 +2263,12 @@ textarea:focus-visible {
 }
 .surface-inverse svg {
   color: inherit !important;
+}
+.surface-inverse .text-inverse-muted {
+  color: var(--inverse-muted) !important;
+}
+.surface-inverse .text-inverse-ink {
+  color: var(--inverse-ink) !important;
 }
 .surface-light {
   background: var(--surface) !important;
