@@ -24,12 +24,20 @@ function readEnvKey(name: string): string {
   return raw.replace(/^["']|["']$/g, "").trim();
 }
 
+function readGeminiKey(): string {
+  return (
+    readEnvKey("GEMINI_API_KEY") ||
+    readEnvKey("GOOGLE_GENERATIVE_AI_API_KEY") ||
+    readEnvKey("GOOGLE_API_KEY")
+  );
+}
+
 export function getAiProviderStatus(): {
   configured: boolean;
   provider: string;
 } {
   ensureBackendEnv();
-  if (readEnvKey("GEMINI_API_KEY")) {
+  if (readGeminiKey()) {
     return { configured: true, provider: "Google Gemini" };
   }
   if (readEnvKey("OPENAI_API_KEY")) {
@@ -384,7 +392,7 @@ export async function generateSalaarReply(
 
   const attempts: Array<() => Promise<AiCompletionResult | AiCompletionFailure>> = [];
 
-  const geminiKey = readEnvKey("GEMINI_API_KEY");
+  const geminiKey = readGeminiKey();
   if (geminiKey) {
     attempts.push(() => callGemini(geminiKey, systemPrompt, history, userMessage));
   }

@@ -13,6 +13,10 @@ import {
 } from "../api/salaar/_lib/aiProvider.ts";
 import { readJsonBody, type NodeRequest } from "../api/salaar/_lib/http.ts";
 import {
+  authenticateRequest,
+  createPostgrestFetchClient,
+} from "../api/salaar/_lib/supabaseAuth.ts";
+import {
   addDaysIso,
   buildWeeklyCalendar,
   calculateCurrentStreak,
@@ -160,13 +164,88 @@ async function testBackendResilience() {
       assert.equal(fallbackOk.model, "gemini-2.0-flash");
       assert.match(fallbackOk.content, /Two Pointers/);
     }
+
+    // Auth guard: malformed SUPABASE_URL must return structured 503, never throw
+    const prevUrl = process.env.SUPABASE_URL;
+    const prevAnon = process.env.SUPABASE_ANON_KEY;
+    try {
+      process.env.SUPABASE_URL = ' "not-a-valid-url"\n';
+      process.env.SUPABASE_ANON_KEY = ' "anon"\n';
+      const badUrlRes = await authenticateRequest({
+        headers: { authorization: "Bearer test-token" },
+      } as unknown as NodeRequest);
+      assert.equal(badUrlRes.auth, null);
+      assert.equal(badUrlRes.statusCode, 503);
+
+      // PostgREST lightweight fallback client query + insert checks
+      process.env.SUPABASE_URL = '"https://example.supabase.co"\n';
+      process.env.SUPABASE_ANON_KEY = '"test-anon-key"\n';
+      let lastRestUrl = "";
+      let lastRestPrefer = "";
+      globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        lastRestUrl = String(input);
+        const h = new Headers(init?.headers);
+        lastRestPrefer = h.get("Prefer") || "";
+        if (lastRestUrl.includes("/auth/v1/user")) {
+          return new Response(
+            JSON.stringify({ id: "user-123", email: "test@example.com", user_metadata: {} }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (init?.method === "POST") {
+          return new Response(JSON.stringify([{ id: "conv-1" }]), {
+            status: 201,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(
+          JSON.stringify([{ display_name: "Bhargav", target_role: "Software Engineer" }]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }) as typeof fetch;
+
+      const validAuth = await authenticateRequest({
+        headers: { authorization: "Bearer valid-jwt" },
+      } as unknown as NodeRequest);
+      assert.ok(validAuth.auth, "Expected valid AuthContext from REST JWT check");
+      assert.equal(validAuth.auth.userId, "user-123");
+
+      const restClient = createPostgrestFetchClient(
+        "https://example.supabase.co",
+        "test-anon-key",
+        "valid-jwt",
+      );
+      const prof = await restClient
+        .from("profiles")
+        .select("display_name, target_role")
+        .eq("id", "user-123")
+        .maybeSingle();
+      assert.equal(prof.error, null);
+      assert.equal((prof.data as { display_name: string }).display_name, "Bhargav");
+      assert.ok(lastRestUrl.includes("/rest/v1/profiles?"));
+      assert.ok(lastRestUrl.includes("id=eq.user-123"));
+
+      const inserted = await restClient
+        .from("salaar_conversations")
+        .insert({ user_id: "user-123", title: "Arrays" })
+        .select("id")
+        .single();
+      assert.equal(inserted.error, null);
+      assert.equal((inserted.data as { id: string }).id, "conv-1");
+      assert.ok(lastRestPrefer.includes("return=representation"));
+    } finally {
+      if (prevUrl === undefined) delete process.env.SUPABASE_URL;
+      else process.env.SUPABASE_URL = prevUrl;
+      if (prevAnon === undefined) delete process.env.SUPABASE_ANON_KEY;
+      else process.env.SUPABASE_ANON_KEY = prevAnon;
+    }
   } finally {
     globalThis.fetch = originalFetch;
     if (prevGeminiKey === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = prevGeminiKey;
   }
 
-  console.log("   ✓ Backend Buffer parsing, history normalization & AI fallback assertions passed.");
+  console.log("   ✓ Backend Buffer parsing, history normalization, PostgREST fallback & AI assertions passed.");
 }
 
 async function testApiEndpointsAndPlaywright() {
@@ -182,7 +261,7 @@ async function testApiEndpointsAndPlaywright() {
     const statusJson = (await statusRes.json()) as { authenticated: boolean; configured: boolean };
     assert.equal(statusJson.authenticated, false);
 
-    // 2B. Auth enforcement on user-scoped endpoints
+    // 2B. Auth enforcement on user-scoped endpoints (both unauthenticated AND invalid Bearer token must return JSON, never 500)
     const unauthProg = await fetch(`${baseUrl}/api/salaar/progress`);
     assert.equal(unauthProg.status, 401);
     const unauthAct = await fetch(`${baseUrl}/api/salaar/activity`, {
@@ -191,7 +270,26 @@ async function testApiEndpointsAndPlaywright() {
       body: JSON.stringify({ eventType: "dsa_problem_solved", title: "Test" }),
     });
     assert.equal(unauthAct.status, 401);
-    console.log("   ✓ Auth guards properly enforce 401 for unauthenticated user data endpoints.");
+
+    for (const authEndpoint of [
+      "/api/salaar/progress",
+      "/api/salaar/streak",
+      "/api/salaar/chat",
+      "/api/salaar/activity",
+      "/api/salaar/memory",
+    ]) {
+      const badTokRes = await fetch(`${baseUrl}${authEndpoint}`, {
+        headers: { Authorization: "Bearer invalid-token" },
+      });
+      assert.equal(
+        badTokRes.status,
+        401,
+        `Invalid Bearer token on ${authEndpoint} should return JSON 401, got ${badTokRes.status}`,
+      );
+      const parsedErr = (await badTokRes.json()) as { error?: string };
+      assert.ok(parsedErr.error && parsedErr.error.length > 0);
+    }
+    console.log("   ✓ Auth guards properly enforce JSON 401 across all user endpoints.");
 
     // 2C. Practice catalog & hint-first check flow
     const dsaRes = await fetch(`${baseUrl}/api/salaar/practice?category=dsa&topic=arrays&difficulty=Medium&limit=5`);

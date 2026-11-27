@@ -10,19 +10,19 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
     return;
   }
 
-  const { auth, error, statusCode } = await authenticateRequest(req);
-  if (!auth) {
-    // Allow frontend to query AI status on public/guest status checks if ?statusOnly=1, otherwise enforce 401
-    const params = getQueryParams(req);
-    if (params.get("statusOnly") === "1") {
-      sendJson(res, 200, { authenticated: false, ...getAiProviderStatus() });
+  try {
+    const { auth, error, statusCode } = await authenticateRequest(req);
+    if (!auth) {
+      // Allow frontend to query AI status on public/guest status checks if ?statusOnly=1, otherwise enforce 401
+      const params = getQueryParams(req);
+      if (params.get("statusOnly") === "1") {
+        sendJson(res, 200, { authenticated: false, ...getAiProviderStatus() });
+        return;
+      }
+      sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
       return;
     }
-    sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
-    return;
-  }
 
-  try {
     const params = getQueryParams(req);
     const localDate = resolveClientLocalDate(
       params.get("localDate") || undefined,

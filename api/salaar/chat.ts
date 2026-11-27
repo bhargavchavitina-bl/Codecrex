@@ -73,13 +73,13 @@ function buildFallbackDashboardContext(
 
 export default async function handler(req: NodeRequest, res: NodeResponse): Promise<void> {
   if (req.method === "GET") {
-    const { auth, error, statusCode } = await authenticateRequest(req);
-    if (!auth) {
-      sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
-      return;
-    }
-
     try {
+      const { auth, error, statusCode } = await authenticateRequest(req);
+      if (!auth) {
+        sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
+        return;
+      }
+
       const params = getQueryParams(req);
       const conversationId = params.get("conversationId");
 
@@ -141,20 +141,25 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
         })),
       });
     } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       console.error("[/api/salaar/chat GET] error:", err);
-      sendJson(res, 500, { error: "Failed to load conversation history." });
+      sendJson(res, 500, {
+        error: detail
+          ? `Failed to load conversation history: ${detail.slice(0, 180)}`
+          : "Failed to load conversation history.",
+      });
     }
     return;
   }
 
   if (req.method === "DELETE") {
-    const { auth, error, statusCode } = await authenticateRequest(req);
-    if (!auth) {
-      sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
-      return;
-    }
-
     try {
+      const { auth, error, statusCode } = await authenticateRequest(req);
+      if (!auth) {
+        sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
+        return;
+      }
+
       const params = getQueryParams(req);
       const conversationId = params.get("conversationId");
       if (!conversationId) {
@@ -174,8 +179,13 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
 
       sendJson(res, 200, { deleted: true });
     } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
       console.error("[/api/salaar/chat DELETE] error:", err);
-      sendJson(res, 500, { error: "Failed to delete conversation." });
+      sendJson(res, 500, {
+        error: detail
+          ? `Failed to delete conversation: ${detail.slice(0, 180)}`
+          : "Failed to delete conversation.",
+      });
     }
     return;
   }

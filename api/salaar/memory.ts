@@ -5,9 +5,22 @@ import type { LearningPreferences, WeakTopicRecord } from "./_lib/types.js";
 import { resolveClientLocalDate } from "../../src/lib/streakUtils.js";
 
 export default async function handler(req: NodeRequest, res: NodeResponse): Promise<void> {
-  const { auth, error, statusCode } = await authenticateRequest(req);
-  if (!auth) {
-    sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
+  if (req.method !== "GET" && req.method !== "PATCH") {
+    sendJson(res, 405, { error: "Method not allowed" });
+    return;
+  }
+
+  let auth: Awaited<ReturnType<typeof authenticateRequest>>["auth"] = null;
+  try {
+    const authRes = await authenticateRequest(req);
+    if (!authRes.auth) {
+      sendJson(res, authRes.statusCode || 401, { error: authRes.error || "Unauthorized" });
+      return;
+    }
+    auth = authRes.auth;
+  } catch (authErr) {
+    const detail = authErr instanceof Error ? authErr.message : String(authErr);
+    sendJson(res, 500, { error: `Authentication error: ${detail.slice(0, 140)}` });
     return;
   }
 

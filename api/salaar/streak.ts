@@ -9,13 +9,13 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
     return;
   }
 
-  const { auth, error, statusCode } = await authenticateRequest(req);
-  if (!auth) {
-    sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
-    return;
-  }
-
   try {
+    const { auth, error, statusCode } = await authenticateRequest(req);
+    if (!auth) {
+      sendJson(res, statusCode || 401, { error: error || "Unauthorized" });
+      return;
+    }
+
     const params = getQueryParams(req);
     const body = req.method === "POST" ? await readJsonBody<{ localDate?: string; timezone?: string }>(req) : {};
     const localDate = resolveClientLocalDate(
@@ -31,7 +31,12 @@ export default async function handler(req: NodeRequest, res: NodeResponse): Prom
       schemaPending: progress.schemaPending,
     });
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
     console.error("[/api/salaar/streak] error:", err);
-    sendJson(res, 500, { error: "Failed to calculate streak metrics." });
+    sendJson(res, 500, {
+      error: detail
+        ? `Failed to calculate streak metrics: ${detail.slice(0, 180)}`
+        : "Failed to calculate streak metrics.",
+    });
   }
 }

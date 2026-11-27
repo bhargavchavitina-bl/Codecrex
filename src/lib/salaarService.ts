@@ -323,11 +323,27 @@ export async function fetchSalaarDashboard(
   const token = await getAccessToken(isGuest);
 
   if (token) {
-    return await apiFetch<SalaarDashboardProgress>(
-      `/api/salaar/progress?localDate=${encodeURIComponent(localDate)}&timezone=${encodeURIComponent(timezone)}`,
-      { method: "GET" },
-      token,
-    );
+    try {
+      return await apiFetch<SalaarDashboardProgress>(
+        `/api/salaar/progress?localDate=${encodeURIComponent(localDate)}&timezone=${encodeURIComponent(timezone)}`,
+        { method: "GET" },
+        token,
+      );
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 401 && supabase) {
+        const refreshed = await supabase.auth.refreshSession().catch(() => null);
+        const nextToken = refreshed?.data?.session?.access_token;
+        if (nextToken) {
+          return await apiFetch<SalaarDashboardProgress>(
+            `/api/salaar/progress?localDate=${encodeURIComponent(localDate)}&timezone=${encodeURIComponent(timezone)}`,
+            { method: "GET" },
+            nextToken,
+          );
+        }
+      }
+      throw err;
+    }
   }
 
   // Guest mode: query AI provider configuration safely without auth, hydrate progress from localStorage
