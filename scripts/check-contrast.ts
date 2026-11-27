@@ -1,5 +1,5 @@
 // scripts/check-contrast.ts
-// WCAG AA Contrast Ratio Checker for CodeCrex design tokens (Strictly Monochrome Light Mode)
+// WCAG AA Contrast Ratio Checker for CodeCrex design tokens (Light Sky-Blue + Matching Navy/Teal/Amber)
 
 interface ContrastPair {
   fgToken: string;
@@ -11,37 +11,37 @@ interface ContrastPair {
 }
 
 const tokens: Record<string, string> = {
-  bg: "#FFFFFF",
+  bg: "#EDF7FF",
   surface: "#FFFFFF",
-  "surface-2": "#F5F5F5",
-  "surface-3": "#EAEAEA",
-  border: "#D4D4D4",
-  "border-strong": "#0A0A0A",
-  ink: "#0A0A0A",
-  "ink-2": "#262626",
-  muted: "#5C5C5C",
-  accent: "#0A0A0A",
-  "accent-hover": "#262626",
-  "on-accent": "#FFFFFF",
-  "accent-text": "#0A0A0A",
-  "accent-soft": "#F0F0F0",
-  "inverse-bg": "#0A0A0A",
+  "surface-2": "#E0F2FE",
+  "surface-3": "#BAE6FD",
+  border: "#B8DDF8",
+  "border-strong": "#0284C7",
+  ink: "#0C2340",
+  "ink-2": "#1E3A5F",
+  muted: "#475569",
+  accent: "#67C6F7",
+  "accent-hover": "#4AB8F2",
+  "on-accent": "#082F49",
+  "accent-text": "#0369A1",
+  "accent-soft": "#E0F2FE",
+  "inverse-bg": "#0C2D48",
   "inverse-ink": "#FFFFFF",
-  "inverse-muted": "#BDBDBD",
-  ember: "#0A0A0A",
+  "inverse-muted": "#BAE6FD",
+  ember: "#C2410C",
   "on-ember": "#FFFFFF",
-  success: "#262626",
+  success: "#0F766E",
   "on-success": "#FFFFFF",
-  "success-text": "#0A0A0A",
-  "success-soft": "#EDEDED",
-  warning: "#6B6B6B",
+  "success-text": "#0F524C",
+  "success-soft": "#CCFBF1",
+  warning: "#B45309",
   "on-warning": "#FFFFFF",
-  "warning-text": "#404040",
-  "warning-soft": "#F2F2F2",
-  danger: "#0A0A0A",
+  "warning-text": "#78350F",
+  "warning-soft": "#FEF3C7",
+  danger: "#BE123C",
   "on-danger": "#FFFFFF",
-  "danger-text": "#0A0A0A",
-  "danger-soft": "#FFFFFF",
+  "danger-text": "#9F1239",
+  "danger-soft": "#FFE4E6",
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -74,12 +74,18 @@ const requiredPairs: [string, string][] = [
   ["muted", "surface"],
   ["muted", "surface-2"],
   ["on-accent", "accent"],
+  ["on-accent", "accent-hover"],
+  ["accent-text", "surface"],
+  ["accent-text", "accent-soft"],
   ["inverse-ink", "inverse-bg"],
   ["inverse-muted", "inverse-bg"],
+  ["on-ember", "ember"],
   ["on-success", "success"],
   ["on-warning", "warning"],
+  ["on-danger", "danger"],
   ["success-text", "success-soft"],
   ["warning-text", "warning-soft"],
+  ["danger-text", "danger-soft"],
 ];
 
 function checkTokens(): { passesAll: boolean; pairs: ContrastPair[] } {
@@ -114,7 +120,7 @@ function checkTokens(): { passesAll: boolean; pairs: ContrastPair[] } {
 
 function runAudit() {
   console.log("═".repeat(76));
-  console.log("     CODECREX MONOCHROME WCAG AA (>= 4.5:1) CONTRAST AUDIT (LIGHT ONLY)     ");
+  console.log("  CODECREX SKY-BLUE & MATCHING NAVY WCAG AA (>= 4.5:1) CONTRAST AUDIT    ");
   console.log("═".repeat(76));
   console.log("");
 

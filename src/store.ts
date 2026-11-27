@@ -20,8 +20,6 @@ import {
   saveCloudProfile,
   mergeGuestDataToCloud,
 } from "./lib/progressService";
-import { logQualifyingActivityClient } from "./lib/salaarService";
-import { problems } from "./data/problems";
 
 export { isSupabaseConfigured, missingSupabaseKeys };
 export const supabaseEnabled = isSupabaseConfigured;
@@ -72,7 +70,6 @@ type State = {
   setCelebrationsEnabled: (enabled: boolean) => void;
   toggleCelebrations: () => void;
   markSession: () => void;
-  markSolvedSynced: (problemId: string) => void;
   recordAttempt: (attempt: Omit<Attempt, "id" | "date">) => void;
   updateProfile: (updates: { name?: string; college?: string; target?: string }) => void;
   hydrate: (uid: string) => Promise<void>;
@@ -133,19 +130,9 @@ export const useStore = create<State>()(
         // 1. Optimistic UI update
         set({ [key]: nextList } as Pick<State, typeof key>);
 
-        // If newly solved, mark session activity & log deduplicated SALAAR learning activity
+        // If newly solved, mark session activity for local streak tracking
         if (key === "solved" && !isPresent) {
           get().markSession();
-          const prob = problems.find((p) => p.id === id);
-          void logQualifyingActivityClient({
-            eventType: "dsa_problem_solved",
-            category: "dsa",
-            topicId: prob?.topicId,
-            questionId: id,
-            title: prob ? `Solved ${prob.title}` : `Solved ${id}`,
-            dedupeKey: `dsa_solve:${id}:${getLocalDateString()}`,
-            isGuest: Boolean(user?.guest || !user),
-          }).catch(() => {});
         }
 
         // 2. Persist to cloud or guest
@@ -209,21 +196,6 @@ export const useStore = create<State>()(
         }
       },
 
-      markSolvedSynced: (problemId: string) => {
-        const current = get().solved;
-        if (!current.includes(problemId)) {
-          const next = [...current, problemId];
-          set({ solved: next });
-          const { user } = get();
-          if (!user || user.guest) {
-            const g = getGuestData();
-            g.solved = next;
-            saveGuestData(g);
-          }
-        }
-        get().markSession();
-      },
-
       recordAttempt: (attempt) => {
         const entry: Attempt = {
           ...attempt,
@@ -245,16 +217,6 @@ export const useStore = create<State>()(
           currentGuest.attempts = nextAttempts;
           saveGuestData(currentGuest);
         }
-
-        void logQualifyingActivityClient({
-          eventType: "practice_session_completed",
-          category: "aptitude",
-          topicId: attempt.topic,
-          title: `Completed ${attempt.topic} test (${attempt.score}/${attempt.total})`,
-          dedupeKey: `apt_test:${entry.id}`,
-          durationSeconds: attempt.duration,
-          isGuest: Boolean(user?.guest || !user),
-        }).catch(() => {});
       },
 
       updateProfile: (updates) => {

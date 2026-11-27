@@ -51,7 +51,7 @@ button:focus-visible,
 }
 
 ::selection {
-    color: var(--surface);
+    color: var(--on-accent);
     background: var(--accent);
 }
 
@@ -178,14 +178,14 @@ p {
 .gradient-text,
 .wordmark b {
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-family: "Instrument Serif", Georgia, serif;
   font-style: italic;
   font-weight: 400;
 }
 
 .wordmark b {
-  color: var(--accent);
+  color: var(--accent-text);
   font-family: var(--font-display);
   font-style: normal;
   font-weight: 700;
@@ -248,7 +248,7 @@ p {
 .btn-soft {
   border-color: var(--border);
   background: var(--surface-2);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .btn-soft:hover {
@@ -424,13 +424,13 @@ textarea:focus-visible {
 .problem-title:hover,
 .global-result:hover,
 .recent-list > a:hover b {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .problem-check input:checked + span {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--surface);
+  color: var(--on-accent);
   animation: check-pop 220ms var(--ease-standard);
 }
 
@@ -446,13 +446,13 @@ textarea:focus-visible {
 .row-action:hover,
 .icon-button:hover {
   transform: translateY(-1px);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .action-bookmark,
 .action-note,
 .action-on {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .progress-ring {
@@ -547,14 +547,14 @@ textarea:focus-visible {
 
 .review-correct {
   border-color: color-mix(in srgb, var(--success) 42%, var(--border));
-  background: color-mix(in srgb, var(--success) 10%, var(--surface));
-  color: var(--success);
+  background: var(--success-soft);
+  color: var(--success-text);
 }
 
 .review-incorrect {
   border-color: color-mix(in srgb, var(--danger) 42%, var(--border));
-  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
-  color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger-text);
 }
 
 .answer-option {
@@ -641,22 +641,22 @@ textarea:focus-visible {
 .avatar-stack i {
   border-color: var(--surface);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .success-bg {
-  background: color-mix(in srgb, var(--success) 13%, var(--surface));
-  color: var(--success);
+  background: var(--success-soft);
+  color: var(--success-text);
 }
 
 .danger-bg {
-  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
-  color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger-text);
 }
 
 .accent-bg {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .ember-bg {
@@ -706,7 +706,7 @@ textarea:focus-visible {
 
 .auth-brand-em {
   font-style: italic;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .auth-brand-desc {
@@ -735,7 +735,7 @@ textarea:focus-visible {
   border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
-  color: var(--accent);
+  color: var(--accent-text);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -1116,21 +1116,21 @@ textarea:focus-visible {
 
 /* Navbar streak badge */
 .streak-button {
-  background: #FFFFFF !important;
-  color: #0A0A0A !important;
+  background: #FFF7ED !important;
+  color: #9A3412 !important;
   border-radius: 9999px;
   padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #0A0A0A !important;
+  border: 1px solid #FDBA74 !important;
 }
 .streak-button svg {
-  color: #0A0A0A !important;
-  fill: #0A0A0A !important;
+  color: #EA580C !important;
+  fill: #EA580C !important;
 }
 .streak-button b {
-  color: #0A0A0A !important;
+  color: #9A3412 !important;
 }
 
 /* Problems solved card top-right badge */
@@ -1168,8 +1168,8 @@ textarea:focus-visible {
   color: var(--on-accent) !important;
 }
 .potd-symbol svg {
-  color: #FFFFFF !important;
-  fill: #FFFFFF !important;
+  color: inherit !important;
+  fill: currentColor !important;
 }
 .potd-copy b {
   color: var(--ink) !important;
@@ -1346,8 +1346,8 @@ textarea:focus-visible {
   color: var(--on-accent) !important;
 }
 .float-icon.target-icon svg {
-  color: #FFFFFF !important;
-  stroke: #FFFFFF !important;
+  color: inherit !important;
+  stroke: currentColor !important;
 }
 .float-check {
   color: var(--ink) !important;
@@ -1368,18 +1368,28 @@ textarea:focus-visible {
 }
 
 .cta-band {
-  background: var(--accent);
-  color: var(--surface);
+  background-color: var(--inverse-bg);
+  background: linear-gradient(135deg, var(--inverse-bg) 0%, #0369A1 100%);
+  color: var(--inverse-ink);
 }
 
 .cta-band p,
 .cta-band .eyebrow,
 .cta-inner h2 {
-  color: var(--surface);
+  color: var(--inverse-ink);
+}
+
+.cta-mark {
+  color: color-mix(in srgb, var(--inverse-ink) 8%, transparent);
 }
 
 .footer {
   min-height: 88px;
+}
+
+.footer p,
+.footer small {
+  color: var(--muted);
 }
 
 .eyebrow,
@@ -1544,8 +1554,9 @@ textarea:focus-visible {
 
 .filter-pills button.selected,
 .tabbar button.tab-active {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
 }
 
 .theme-button {
@@ -1580,7 +1591,7 @@ textarea:focus-visible {
 .streak-mini-grid > .mini-day-active,
 .month-day.day-active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .streak-mini-grid > .mini-day-today,
@@ -2255,7 +2266,7 @@ textarea:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   GLOBAL MONOCHROME CONTRAST UTILITIES AND BADGES
+   GLOBAL SKY-BLUE & OCEAN-NAVY CONTRAST UTILITIES AND BADGES
    ══════════════════════════════════════════════════════════════ */
 .surface-inverse {
   background: var(--inverse-bg) !important;
@@ -2275,11 +2286,20 @@ textarea:focus-visible {
   color: var(--ink) !important;
 }
 
-.text-on-accent,
-.text-inverse-ink,
-.text-on-success,
-.text-on-ember {
+.text-inverse-ink {
+  color: var(--inverse-ink) !important;
+}
+.text-inverse-muted {
+  color: var(--inverse-muted) !important;
+}
+.text-on-accent {
   color: var(--on-accent) !important;
+}
+.text-on-success {
+  color: var(--on-success) !important;
+}
+.text-on-ember {
+  color: var(--on-ember) !important;
 }
 .text-on-accent svg,
 .text-inverse-ink svg {
@@ -2296,11 +2316,11 @@ textarea:focus-visible {
 /* Feature card icon contrast fix */
 .feature-icon {
   background: var(--surface-2) !important;
-  color: var(--ink) !important;
+  color: var(--accent-text) !important;
   border: 1px solid var(--border) !important;
 }
 .feature-icon svg {
-  color: var(--ink) !important;
+  color: var(--accent-text) !important;
 }
 .feature-card:nth-child(2) .feature-icon,
 .feature-icon.feature-icon-inverse {
@@ -2310,7 +2330,7 @@ textarea:focus-visible {
 }
 .feature-card:nth-child(2) .feature-icon svg,
 .feature-icon.feature-icon-inverse svg {
-  color: #FFFFFF !important;
+  color: inherit !important;
 }
 
 /* Aptitude symbol contrast fix */
@@ -2321,7 +2341,7 @@ textarea:focus-visible {
   height: 34px;
   border-radius: 9px;
   background: var(--surface-2) !important;
-  color: var(--ink) !important;
+  color: var(--accent-text) !important;
   border: 1px solid var(--border) !important;
 }
 .apt-card:nth-child(2) .apt-symbol {
@@ -2338,7 +2358,7 @@ textarea:focus-visible {
   border: 3px solid var(--surface) !important;
 }
 
-/* Badges, pills and chips strictly outline or inverse */
+/* Badges, pills and chips */
 .badge,
 .pill,
 .chip,
@@ -2352,13 +2372,21 @@ textarea:focus-visible {
 }
 
 .badge-inverse,
-.badge-success,
-.badge-accent,
-.month-badge.active,
 .month-badge.today {
   background: var(--inverse-bg) !important;
   color: var(--inverse-ink) !important;
   border: 1px solid var(--inverse-bg) !important;
+}
+.badge-accent,
+.month-badge.active {
+  background: var(--accent-soft) !important;
+  color: var(--accent-text) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border)) !important;
+}
+.badge-success {
+  background: var(--success-soft) !important;
+  color: var(--success-text) !important;
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent) !important;
 }
 .badge-inverse svg,
 .badge-success svg,
@@ -2366,6 +2394,26 @@ textarea:focus-visible {
 .month-badge.active svg,
 .month-badge.today svg {
   color: inherit !important;
+}
+
+.overall-card,
+.apt-hero {
+  background-color: var(--surface) !important;
+  background-image: linear-gradient(110deg, var(--surface) 0%, var(--accent-soft) 100%) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.difficulty.easy {
+  background: var(--success-soft) !important;
+  color: var(--success-text) !important;
+}
+.difficulty.medium {
+  background: var(--warning-soft) !important;
+  color: var(--warning-text) !important;
+}
+.difficulty.hard {
+  background: var(--danger-soft) !important;
+  color: var(--danger-text) !important;
 }
 
 /* Topic difficulty and breakdown styling */
@@ -2388,8 +2436,8 @@ textarea:focus-visible {
 
 /* Active day in calendars */
 .month-day.day-active {
-  background: var(--inverse-bg) !important;
-  color: var(--inverse-ink) !important;
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
   font-weight: 700 !important;
 }
 .goal-icon {
@@ -2397,5 +2445,5 @@ textarea:focus-visible {
   color: var(--inverse-ink) !important;
 }
 .goal-icon svg {
-  color: #FFFFFF !important;
+  color: inherit !important;
 }

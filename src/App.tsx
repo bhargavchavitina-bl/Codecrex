@@ -87,7 +87,6 @@ import {
   DASHBOARD_MOTTO,
   DSA_ROADMAP_SUBTITLE,
 } from "./content/copy";
-import { SalaarPage } from "./components/salaar/SalaarPage";
 import {
   calculateCurrentStreak,
   calculateLongestStreak,
@@ -104,7 +103,7 @@ function Logo() {
       aria-label="CodeCrex home"
     >
       <svg width="38" height="38" viewBox="0 0 64 64" aria-hidden="true">
-        <rect width="64" height="64" rx="16" fill="#0A0A0A" />
+        <rect width="64" height="64" rx="16" fill="#0C2D48" />
         <path
           d="M33.96 23.64A13 13 0 1 0 33.96 40.36"
           stroke="#FFFFFF"
@@ -114,7 +113,7 @@ function Logo() {
         />
         <path
           d="M49.96 23.64A13 13 0 1 0 49.96 40.36"
-          stroke="#BDBDBD"
+          stroke="#67C6F7"
           strokeWidth="5.5"
           strokeLinecap="round"
           fill="none"
@@ -246,14 +245,6 @@ function App() {
           element={
             <Shell>
               <StreakPage />
-            </Shell>
-          }
-        />
-        <Route
-          path="/salaar"
-          element={
-            <Shell>
-              <SalaarPage />
             </Shell>
           }
         />
@@ -1432,19 +1423,6 @@ function Shell({ children }: { children: React.ReactNode }) {
             {({ isActive }) => (
               <>
                 <Flame size={17} /> Your streak
-                {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
-              </>
-            )}
-          </NavLink>
-          <NavLink
-            to="/salaar"
-            className={({ isActive }) =>
-              "side-link " + (isActive ? "active" : "")
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Sparkles size={17} /> SALAAR AI <span className="side-badge">AI</span>
                 {isActive && <motion.span className="side-active-indicator" layoutId="side-active-indicator" />}
               </>
             )}
@@ -3885,7 +3863,7 @@ function Profile() {
             <div className="celebration-preview-container" style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Sparkles size={14} style={{ color: "var(--accent)" }} /> Live Animation Previews:
+                  <Sparkles size={14} style={{ color: "var(--accent-text)" }} /> Live Animation Previews:
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <button

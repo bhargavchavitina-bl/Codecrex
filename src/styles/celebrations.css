@@ -182,12 +182,12 @@
 .medal-hexagon {
   width: 96px;
   height: 96px;
-  background: linear-gradient(135deg, #262626, #0A0A0A);
+  background: linear-gradient(135deg, #0369A1, #0C2D48);
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  box-shadow: 0 8px 24px rgb(12 45 72 / 35%);
   position: relative;
   overflow: hidden;
 }
@@ -196,7 +196,7 @@
   content: "";
   position: absolute;
   inset: 4px;
-  background: linear-gradient(135deg, #404040, #171717);
+  background: linear-gradient(135deg, #0EA5E9, #0C2D48);
   clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   z-index: 1;
 }

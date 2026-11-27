@@ -142,7 +142,7 @@ export default function LearnContent({
                 onClick={() => handleSelectUnit(t.id)}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-sm font-medium transition-all ${
                   active
-                    ? "surface-inverse bg-accent text-on-accent shadow-[2px_2px_0px_#0A0A0A]"
+                    ? "bg-accent text-on-accent shadow-[2px_2px_0px_var(--border-strong)]"
                     : "text-ink-2 hover:bg-surface-2"
                 }`}
               >
@@ -498,15 +498,15 @@ export default function LearnContent({
         </section>
 
         {/* 8. "Remember This" Inverse Card */}
-        <section id="remember" className="bg-[#0A0A0A] text-white border border-[#0A0A0A] rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-md scroll-mt-32">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#BDBDBD]">
-            <Sparkles size={16} className="text-white" />
+        <section id="remember" className="surface-inverse bg-inverse-bg text-inverse-ink border border-inverse-bg rounded-2xl p-6 md:p-8 flex flex-col gap-4 shadow-md scroll-mt-32">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-inverse-muted">
+            <Sparkles size={16} className="text-inverse-ink" />
             <span>REMEMBER THIS · HIGH-YIELD TAKEAWAYS</span>
           </div>
-          <ul className="flex flex-col gap-2.5 text-sm md:text-base text-white/90">
+          <ul className="flex flex-col gap-2.5 text-sm md:text-base text-inverse-ink">
             {currentTopic.rememberThis.map((bullet, i) => (
               <li key={i} className="flex items-start gap-2.5">
-                <span className="text-[#BDBDBD] font-mono select-none">▸</span>
+                <span className="text-inverse-muted font-mono select-none">▸</span>
                 <span className="leading-relaxed">{bullet}</span>
               </li>
             ))}
@@ -583,7 +583,7 @@ export default function LearnContent({
             {onGoToPractice ? (
               <button
                 onClick={onGoToPractice}
-                className="px-5 py-2.5 surface-inverse bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
+                className="px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_var(--border-strong)] flex items-center gap-2"
               >
                 <span>Practice test</span>
                 <ArrowRight size={16} />
@@ -591,7 +591,7 @@ export default function LearnContent({
             ) : (
               <Link
                 to={`/test/${currentTopic.group}`}
-                className="px-5 py-2.5 surface-inverse bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_#0A0A0A] flex items-center gap-2"
+                className="px-5 py-2.5 bg-accent text-on-accent text-sm font-semibold rounded-xl hover:bg-accent-hover transition-all shadow-[2px_2px_0px_var(--border-strong)] flex items-center gap-2"
               >
                 <span>Practice test</span>
                 <ArrowRight size={16} />

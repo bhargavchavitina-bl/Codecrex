@@ -2,7 +2,7 @@
 
 **Code. Climb. Crex.**
 
-CodeCrex is a frontend interview-prep app for B.Tech students. It includes a pattern-based DSA roadmap, personal problem notes and revision flags, aptitude lessons, timed MCQ practice, progress tracking, and a local-calendar streak. The app features a clean, high-contrast, strictly monochrome (black-and-white) light-mode-only interface.
+CodeCrex is a frontend interview-prep app for B.Tech students. It includes a pattern-based DSA roadmap, personal problem notes and revision flags, aptitude lessons, timed MCQ practice, progress tracking, and a local-calendar streak. The app features a clean, high-contrast light sky-blue and ocean-navy light-mode-only interface.
 
 ## Requirements and local setup
 
@@ -31,8 +31,7 @@ Follow these steps to configure your Supabase backend:
 
 3. **Run database schema & migrations**:
    - Open the **SQL Editor** in your Supabase dashboard, paste the contents of [`supabase/schema.sql`](./supabase/schema.sql), and run it.
-   - Run the idempotent migrations [`supabase/migrations/002_profiles.sql`](./supabase/migrations/002_profiles.sql) and [`supabase/migrations/003_salaar.sql`](./supabase/migrations/003_salaar.sql) to set up profiles, triggers, SALAAR AI memory/chat/practice/activity tables, and RLS policies.
-   - Set backend AI credentials (`GEMINI_API_KEY`, or fallback `OPENAI_API_KEY` / `GROQ_API_KEY` / `ANTHROPIC_API_KEY`) in `.env` locally and Vercel Environment Variables in production (**never** prefix AI keys with `VITE_`).
+   - Run the idempotent migration [`supabase/migrations/002_profiles.sql`](./supabase/migrations/002_profiles.sql) to set up profiles, triggers, and RLS policies.
    - These scripts create:
      - `profiles` table with automatic profile creation trigger on signup.
      - `problem_progress` table for solved status, bookmarks, and revision notes.
@@ -58,7 +57,7 @@ Follow these steps to configure your Supabase backend:
 ## Routes
 
 - **Public**: `/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`
-- **Protected**: `/dashboard`, `/dsa`, `/dsa/:topicId`, `/aptitude`, `/aptitude/:topicId`, `/test/:topicId`, `/test/:topicId/result`, `/profile`, `/streak`, `/salaar`
+- **Protected**: `/dashboard`, `/dsa`, `/dsa/:topicId`, `/aptitude`, `/aptitude/:topicId`, `/test/:topicId`, `/test/:topicId/result`, `/profile`, `/streak`
 
 ## Content and scripts
 

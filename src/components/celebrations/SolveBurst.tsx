@@ -7,11 +7,11 @@ export interface BurstPoint {
 }
 
 const COLORS = [
-  "#0A0A0A", // deep black
-  "#262626", // charcoal
-  "#737373", // neutral gray
-  "#BDBDBD", // light gray
-  "#FFFFFF", // crisp white
+  "#67C6F7", // light sky blue
+  "#0369A1", // cerulean blue
+  "#0C2D48", // ocean navy
+  "#0F766E", // matching teal
+  "#F59E0B", // warm amber accent
 ];
 
 interface SolveBurstProps {
